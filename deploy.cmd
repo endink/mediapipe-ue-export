@@ -2,7 +2,6 @@
 
 @echo off
 
-set "PYTHON_EXE=C:\\Users\\endink\\AppData\\Local\\Programs\\Python\\Python310\\python.exe"
 set "UNREAL_PLUGIN_DIR=D:\3D_Works\UE\MediaPipe4U"
 set "INITIAL_DIR=%cd%"
 
@@ -18,6 +17,15 @@ FOR /F "tokens=1,* delims=\/" %%i in ("%FN%") do (
     )
 )
 echo Current folder: %FN%
+
+
+FOR /F %%i in ('where python') do (
+    set PYTHON_EXE=%%i
+	goto GET_PY
+)
+:GET_PY
+
+set "PYTHON_EXE=%PYTHON_EXE:\=\\%"
 
 cd "%SCRIPTS_DIR%..\..\"
 
