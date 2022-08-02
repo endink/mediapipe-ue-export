@@ -108,7 +108,7 @@
     </CustomBuildAfterTargets>
     <NMakeBuildCommandLine>..\scripts\build_app.cmd
 </NMakeBuildCommandLine>
-    <NMakeIncludeSearchPath>$(VC_IncludePath);$(SolutionDir);..\..\..\bazel-mediapipe\external\windows_opencv\include\;..\..\..\bazel-mediapipe\external\windows_opencv\include\opencv2\;..\..\..\bazel-mediapipe\external\com_google_absl\;..\..\..\bazel-mediapipe\external\com_google_protobuf\;..\..\..\bazel-mediapipe\external\com_github_gflags_gflags\;..\..\..\bazel-mediapipe\external\com_github_glog_glog\;..\..\..\bazel-bin\;..\..\..\</NMakeIncludeSearchPath>
+    <NMakeIncludeSearchPath>$(VC_IncludePath);$(SolutionDir);..\..\..\bazel-mediapipe\external\windows_opencv\include\;..\..\..\bazel-mediapipe\external\windows_opencv\include\opencv2\;..\..\..\bazel-mediapipe\external\com_google_absl\;..\..\..\bazel-mediapipe\external\com_google_protobuf\;..\..\..\bazel-mediapipe\external\com_github_gflags_gflags\;..\..\..\bazel-mediapipe\external\com_github_glog_glog\;..\..\..\bazel-bin\;..\..\..\;..\..\..\bazel-mediapipe\</NMakeIncludeSearchPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
