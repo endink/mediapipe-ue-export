@@ -19,17 +19,31 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\classification_packet.h" />
+    <ClInclude Include="..\face_geometry_packet.h" />
+    <ClInclude Include="..\landmarks_packet.h" />
+    <ClInclude Include="..\packet.h" />
+    <ClInclude Include="..\packet_api.h" />
+    <ClInclude Include="..\protobuf.h" />
     <ClInclude Include="..\ump_api.h" />
+    <ClInclude Include="..\ump_commons.h" />
     <ClInclude Include="..\ump_context.h" />
     <ClInclude Include="..\ump_dll.h" />
     <ClInclude Include="..\ump_frame.h" />
     <ClInclude Include="..\ump_object.h" />
+    <ClInclude Include="..\ump_packet.h" />
     <ClInclude Include="..\ump_profiler.h" />
     <ClInclude Include="..\ump_observer.h" />
     <ClInclude Include="..\ump_shared.h" />
     <ClInclude Include="..\ump_pipeline.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\classification_packet.cpp" />
+    <ClCompile Include="..\face_geometry_packet.cc" />
+    <ClCompile Include="..\landmarks_packet.cc" />
+    <ClCompile Include="..\packet.cc" />
+    <ClCompile Include="..\packet_api.cc" />
+    <ClCompile Include="..\protobuf.cc" />
     <ClCompile Include="..\ump_app.cc" />
     <ClCompile Include="..\ump_context.cc" />
     <ClCompile Include="..\ump_dll.cc" />
@@ -108,7 +122,7 @@
     </CustomBuildAfterTargets>
     <NMakeBuildCommandLine>..\scripts\build_app.cmd
 </NMakeBuildCommandLine>
-    <NMakeIncludeSearchPath>$(VC_IncludePath);$(SolutionDir);..\..\..\bazel-mediapipe\external\windows_opencv\include\;..\..\..\bazel-mediapipe\external\windows_opencv\include\opencv2\;..\..\..\bazel-mediapipe\external\com_google_absl\;..\..\..\bazel-mediapipe\external\com_google_protobuf\;..\..\..\bazel-mediapipe\external\com_github_gflags_gflags\;..\..\..\bazel-mediapipe\external\com_github_glog_glog\;..\..\..\bazel-bin\;..\..\..\;..\..\..\bazel-mediapipe\</NMakeIncludeSearchPath>
+    <NMakeIncludeSearchPath>$(VC_IncludePath);$(SolutionDir);..\..\..\bazel-mediapipe\external\windows_opencv\include\;..\..\..\bazel-mediapipe\external\windows_opencv\include\opencv2\;..\..\..\bazel-mediapipe\external\com_google_absl\;..\..\..\bazel-mediapipe\external\com_google_protobuf\;..\..\..\bazel-mediapipe\external\com_github_gflags_gflags\;..\..\..\bazel-mediapipe\external\com_github_glog_glog\;..\..\..\bazel-bin\;..\..\..\;..\;..\..\..\bazel-mediapipe\</NMakeIncludeSearchPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>

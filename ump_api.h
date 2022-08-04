@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include "ump_commons.h"
+#include "ump_packet.h"
 
 //
 // Log
@@ -52,7 +54,7 @@ public:
 
 extern "C"
 {
-	IUmpContext* UmpCreateContext();
+    MP_API IUmpContext* UmpCreateContext();
 	typedef IUmpContext* UmpCreateContext_Proto();
 }
 
@@ -86,16 +88,16 @@ class IUmpPacketCallback
 {
 public:
 	virtual void OnUmpPresence(class IUmpObserver* observer, bool present) = 0;
-	virtual void OnUmpPacket(class IUmpObserver* observer) = 0;
+	virtual void OnUmpPacket(class IUmpObserver* observer, void* packet) = 0;
 };
 
 class IUmpObserver : public IUmpObject
 {
 public:
 	virtual void SetPacketCallback(IUmpPacketCallback* callback) = 0;
-	virtual size_t GetMessageType() = 0;
-	virtual const void* const GetData() = 0;
+	virtual class IPacketAPI* GetPacketAPI() = 0;
 };
+
 
 //
 // Frame callback

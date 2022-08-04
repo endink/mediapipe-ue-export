@@ -1,13 +1,20 @@
 #pragma once
 
 #include "ump_object.h"
+#include "packet_api.h"
 
 using UmpObserverBase = UmpObject<IUmpObserver>;
 
 class UmpObserver : public UmpObserverBase
 {
 protected:
-	virtual ~UmpObserver() override { log_d(strf("~UmpObserver %s", *_stream_name)); }
+	virtual ~UmpObserver() override { 
+		if (_packetAPI != nullptr)
+		{
+			delete _packetAPI;
+		}
+		log_d(strf("~UmpObserver %s", *_stream_name)); 
+	}
 
 public:
 	UmpObserver(const char* in_stream_name) : _stream_name(in_stream_name) { log_d(strf("+UmpObserver %s", *_stream_name)); }
@@ -34,15 +41,8 @@ public:
 			if (_callback)
 			{
 				PROF_NAMED("observer_callback");
-
-				//_raw_data = pk.Get()
-				_raw_data = pk.GetRaw(); // requires patched mediapipe\framework\packet.h
-				_message_type = pk.GetTypeId().hash_code();
-
-				_callback->OnUmpPacket(this);
-
-				_raw_data = nullptr;
-				_message_type = 0;
+				const void* p = &pk;
+				_callback->OnUmpPacket(this, const_cast<void*>(p));
 			}
 
 			return absl::OkStatus();
@@ -52,13 +52,18 @@ public:
 	}
 
 	virtual void SetPacketCallback(IUmpPacketCallback* in_callback) override { _callback = in_callback; }
-	virtual size_t GetMessageType() override { return _message_type; }
-	virtual const void* const GetData() override { return _raw_data; }
+
+	virtual class IPacketAPI* GetPacketAPI() override 
+	{ 
+		if (_packetAPI == nullptr) {
+			_packetAPI = new PacketAPI();
+		}
+		return _packetAPI;
+	}
 
 protected:
 	std::string _stream_name;
 	IUmpPacketCallback* _callback = nullptr;
-	const void* _raw_data = nullptr;
-	size_t _message_type = 0;
 	bool _presence = false;
+	IPacketAPI* _packetAPI = nullptr;
 };

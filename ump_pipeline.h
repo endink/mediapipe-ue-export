@@ -1,6 +1,8 @@
-#pragma once
+#ifndef UMP_PIPELINE_H
+#define UMP_PIPELINE_H
 
 #include "ump_object.h"
+#include "mediapipe/framework/calculator_graph.h"
 
 using UmpPipelineBase = UmpObject<IUmpPipeline>;
 
@@ -62,3 +64,5 @@ private:
 	uint64_t _frame_id = 0;
 	double _frame_ts = 0;
 };
+
+#endif

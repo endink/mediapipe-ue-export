@@ -1,7 +1,7 @@
 #include "ump_pipeline.h"
 #include "ump_dll.h"
 
-IUmpContext* DYN_UmpCreateContext()
+IUmpContext* CreateMediapipeContext()
 {
 	return UmpCreateContext();
 }

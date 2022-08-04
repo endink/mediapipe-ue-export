@@ -10,6 +10,9 @@
     <Filter Include="app">
       <UniqueIdentifier>{7da886f8-92d9-4e1b-bc4b-b4cd6f0fc1c8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="exports">
+      <UniqueIdentifier>{cdaae859-b792-49eb-8046-af5ea4c637f4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\BUILD" />
@@ -33,9 +36,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\ump_api.h">
-      <Filter>core</Filter>
-    </ClInclude>
     <ClInclude Include="..\ump_pipeline.h">
       <Filter>core</Filter>
     </ClInclude>
@@ -44,9 +44,6 @@
     </ClInclude>
     <ClInclude Include="..\ump_shared.h">
       <Filter>core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ump_dll.h">
-      <Filter>app</Filter>
     </ClInclude>
     <ClInclude Include="..\ump_object.h">
       <Filter>core</Filter>
@@ -60,6 +57,36 @@
     <ClInclude Include="..\ump_frame.h">
       <Filter>core</Filter>
     </ClInclude>
+    <ClInclude Include="..\protobuf.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ump_dll.h">
+      <Filter>app</Filter>
+    </ClInclude>
+    <ClInclude Include="..\face_geometry_packet.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\landmarks_packet.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ump_commons.h">
+      <Filter>exports</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ump_api.h">
+      <Filter>exports</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packet.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\classification_packet.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\packet_api.h">
+      <Filter>core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ump_packet.h">
+      <Filter>exports</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ump_pipeline.cc">
@@ -72,6 +99,24 @@
       <Filter>app</Filter>
     </ClCompile>
     <ClCompile Include="..\ump_context.cc">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packet.cc">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\protobuf.cc">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\face_geometry_packet.cc">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\landmarks_packet.cc">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\packet_api.cc">
+      <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\classification_packet.cpp">
       <Filter>core</Filter>
     </ClCompile>
   </ItemGroup>

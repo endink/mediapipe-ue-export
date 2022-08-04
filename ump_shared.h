@@ -25,6 +25,20 @@
 
 #define UMP_LOCK(_mux) auto _lock = std::lock_guard(_mux)
 
+#define TRY             \
+  try {
+
+#define CATCH_EXCEPTION                            \
+  return 0;            \
+  }            \
+  catch (std::exception & e) {            \
+    std::cerr << e.what() << std::endl;            \
+  }            \
+  catch (...) {            \
+    std::cerr << "Unknown exception occured" << std::endl;            \
+  }            \
+return -1; 
+ 
 // Globals
 
 extern IUmpLog* _ump_log;
@@ -46,4 +60,16 @@ inline std::string strf(const char* format, ...)
 	else
 		buf[0] = 0;
 	return std::move(std::string(buf));
+}
+
+
+extern inline const char* strcpy_to_heap(const std::string& str) {
+	if (str.empty()) {
+		return nullptr;
+	}
+
+	auto str_ptr = new char[str.length() + 1];
+	snprintf(str_ptr, str.length() + 1, str.c_str());
+
+	return str_ptr;
 }

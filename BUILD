@@ -11,14 +11,22 @@ package(default_visibility = [
 cc_library(
 	name = "headers",
 	hdrs = glob(["*.h"]),
-	visibility = ["//mediapipe/unreal2:__pkg__"],
+	visibility = ["//visibility:public"],
 )
 
 
 
 cc_library(
 	name = "ump_core",
-	srcs = ["ump_context.cc", "ump_pipeline.cc"],
+	srcs = [
+     "ump_context.cc", 
+     "ump_pipeline.cc", 
+     "packet.cc", 
+     "landmarks_packet.cc", 
+     "face_geometry_packet.cc", 
+     "classification_packet.cpp",
+     "packet_api.cc"
+	],
 	deps = [
 		"@com_google_absl//absl/flags:flag",
 		"@com_google_absl//absl/flags:parse",
@@ -47,13 +55,13 @@ cc_library(
 		
 		"//mediapipe/framework/formats/motion:optical_flow_field_data_cc_proto",
 		":headers",
-	],
+	]
 )
 
 cc_binary(
 	name = "mediapipe_api",
 	srcs = ["ump_dll.cc"],
-	defines = ["UMP_EXPORTS"],
+	defines = ["MP_EXPORTS"],
 	linkshared = 1,
 	deps = [
 		":ump_core",

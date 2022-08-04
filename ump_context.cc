@@ -1,5 +1,6 @@
 #include "ump_context.h"
 #include "ump_pipeline.h"
+#include "packet_api.h"
 
 ABSL_DECLARE_FLAG(std::string, resource_root_dir);
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ump_object.h"
+#include "ump_packet.h"
 
 using UmpContextBase = UmpObject<IUmpContext>;
 
