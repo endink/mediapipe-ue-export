@@ -87,6 +87,9 @@
     <ClInclude Include="..\ump_packet.h">
       <Filter>exports</Filter>
     </ClInclude>
+    <ClInclude Include="..\dummy_packet_callback.h">
+      <Filter>app</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ump_pipeline.cc">
@@ -118,6 +121,9 @@
     </ClCompile>
     <ClCompile Include="..\classification_packet.cpp">
       <Filter>core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\dummy_packet_callback.cc">
+      <Filter>app</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

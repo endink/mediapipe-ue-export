@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\classification_packet.h" />
+    <ClInclude Include="..\dummy_packet_callback.h" />
     <ClInclude Include="..\face_geometry_packet.h" />
     <ClInclude Include="..\landmarks_packet.h" />
     <ClInclude Include="..\packet.h" />
@@ -39,6 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\classification_packet.cpp" />
+    <ClCompile Include="..\dummy_packet_callback.cc" />
     <ClCompile Include="..\face_geometry_packet.cc" />
     <ClCompile Include="..\landmarks_packet.cc" />
     <ClCompile Include="..\packet.cc" />
