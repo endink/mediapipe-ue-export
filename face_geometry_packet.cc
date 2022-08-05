@@ -7,3 +7,9 @@ MP_API int mp_Packet__GetFaceGeometryVector(void* packet, SerializedProtoArray* 
 	auto p = (mediapipe::Packet*)packet;
 	return mp_Packet__GetSerializedProtoVector<mediapipe::face_geometry::FaceGeometry>(p, value_out);
 }
+
+MP_API int mp_Packet__GetFaceGeometry(void* packet, SerializedProto* value_out)
+{
+	auto p = (mediapipe::Packet*)packet;
+	return mp_Packet__GetSerializedProto<mediapipe::face_geometry::FaceGeometry>(p, value_out);
+}

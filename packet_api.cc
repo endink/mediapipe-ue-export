@@ -4,7 +4,7 @@
 #include "classification_packet.h"
 #include "packet.h"
 
-int PacketAPI::GetLandmarkBoolean(void* packet, bool* value_out)
+int PacketAPI::GetBoolean(void* packet, bool* value_out)
 {
 	auto p = (mediapipe::Packet*)packet;
 	return mp_Packet__GetBool(p, value_out);
@@ -30,9 +30,19 @@ int PacketAPI::GetNormalizedLandmarkListVector(void* packet, SerializedProtoArra
 	return mp_Packet__GetNormalizedLandmarkListVector(packet, value_out);
 }
 
+int PacketAPI::GetFaceGeometry(void* packet, SerializedProto* value_out)
+{
+	return mp_Packet__GetFaceGeometry(packet, value_out);
+}
+
 int PacketAPI::GetFaceGeometryVector(void* packet, SerializedProtoArray* value_out)
 {
 	return mp_Packet__GetFaceGeometryVector(packet, value_out);
+}
+
+int PacketAPI::GetClassificationList(void* packet, SerializedProto* value_out)
+{
+	return mp_Packet__GetClassificationList(packet, value_out);
 }
 
 int PacketAPI::GetClassificationListVector(void* packet, SerializedProtoArray* value_out)

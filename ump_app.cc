@@ -1,5 +1,6 @@
 #include "ump_pipeline.h"
 #include "mediapipe/framework/port/opencv_video_inc.h"
+#include "dummy_packet_callback.h"
 
 #define UMP_UNIQ(_type) std::unique_ptr<_type, IUmpObject::Dtor>
 
@@ -28,38 +29,20 @@ int main(int argc, char* argv[])
 
 		std::vector<UMP_UNIQ(IUmpObserver)> observers;
 
-		#if 0
-		pipe->SetGraphConfiguration("mediapipe/unreal/pose_landmarks.pbtxt");
-		observers.emplace_back(pipe->CreateObserver("pose_landmarks"));
-		#endif
-
-		#if 0
-		pipe->SetGraphConfiguration("mediapipe/unreal/holistic_landmarks.pbtxt");
-		observers.emplace_back(pipe->CreateObserver("pose_landmarks"));
+		pipe->SetGraphConfiguration("mediapipe/graphs/holistic_tracking_cpu.pbtxt");
+		auto ob = pipe->CreateObserver("pose_landmarks");
+		observers.emplace_back(ob);
 		observers.emplace_back(pipe->CreateObserver("face_landmarks"));
 		observers.emplace_back(pipe->CreateObserver("left_hand_landmarks"));
 		observers.emplace_back(pipe->CreateObserver("right_hand_landmarks"));
-		#endif
 
-		#if 0
-		pipe->SetGraphConfiguration("mediapipe/unreal/face_landmarks_with_iris.pbtxt");
-		observers.emplace_back(pipe->CreateObserver("multi_face_landmarks"));
-		observers.emplace_back(pipe->CreateObserver("left_eye_contour_landmarks"));
-		observers.emplace_back(pipe->CreateObserver("left_iris_landmarks"));
-		observers.emplace_back(pipe->CreateObserver("left_eye_rect_from_landmarks"));
-		observers.emplace_back(pipe->CreateObserver("right_eye_contour_landmarks"));
-		observers.emplace_back(pipe->CreateObserver("right_iris_landmarks"));
-		observers.emplace_back(pipe->CreateObserver("right_eye_rect_from_landmarks"));
-		#endif
-
-		#if 1
-		pipe->SetGraphConfiguration("mediapipe/unreal/objectron_landmarks.pbtxt");
-		observers.emplace_back(pipe->CreateObserver("objectron_landmarks"));
-		#endif
+		auto callback = new DummyPacketCallback();
+		ob->SetPacketCallback(callback);
 
 		pipe->Start();
 		getchar();
 		pipe->Stop();
+		delete callback;
 		pipe->LogProfilerStats();
 	}
 

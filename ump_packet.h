@@ -6,12 +6,14 @@
 class IPacketAPI
 {
 public:
-	virtual int GetLandmarkBoolean(void* packet, bool* value_out) = 0;
+	virtual int GetBoolean(void* packet, bool* value_out) = 0;
 	virtual int GetLandmarkList(void* packet, SerializedProto* value_out) = 0;
 	virtual int GetLandmarkListVector(void* packet, SerializedProtoArray* value_out) = 0;
 	virtual int GetNormalizedLandmarkList(void* packet, SerializedProto* value_out) = 0;
 	virtual int GetNormalizedLandmarkListVector(void* packet, SerializedProtoArray* value_out) = 0;
+	virtual int GetFaceGeometry(void* packet, SerializedProto* value_out) = 0;
 	virtual int GetFaceGeometryVector(void* packet, SerializedProtoArray* value_out) = 0;
+	virtual int GetClassificationList(void* packet, SerializedProto* value_out) = 0;
 	virtual int GetClassificationListVector(void* packet, SerializedProtoArray* value_out) = 0;
 };
 

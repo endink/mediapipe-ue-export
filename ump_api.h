@@ -88,7 +88,7 @@ class IUmpPacketCallback
 {
 public:
 	virtual void OnUmpPresence(class IUmpObserver* observer, bool present) = 0;
-	virtual void OnUmpPacket(class IUmpObserver* observer, void* packet) = 0;
+	virtual bool OnUmpPacket(class IUmpObserver* observer, void* packet) = 0;
 };
 
 class IUmpObserver : public IUmpObject

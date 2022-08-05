@@ -14,9 +14,14 @@
 #include <atomic>
 #include <mutex>
 
+#include <iostream>  
+#include <exception> 
+
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "mediapipe/framework/calculator_framework.h"
+
+#include "ump_commons.h"
 
 //#define PROF_ENABLE
 #include "ump_profiler.h"
@@ -38,6 +43,7 @@
     std::cerr << "Unknown exception occured" << std::endl;            \
   }            \
 return -1; 
+
  
 // Globals
 

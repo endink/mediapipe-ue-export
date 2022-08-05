@@ -87,8 +87,14 @@ copy /Y "%MP_ROOT%\mediapipe\modules\objectron\object_detection_oidv4_labelmap.t
 copy /Y "%MP_ROOT%\mediapipe\modules\objectron\object_detection_3d_cup.tflite" "%DEPLOY_ROOT%\mediapipe\modules\objectron\"
 
 :: graphs
+copy /Y "%MP_ROOT%\mediapipe\graphs\holistic_tracking\holistic_tracking_cpu.pbtxt" "%SCRIPTS_DIR%\graphs\"
+copy /Y "%MP_ROOT%\mediapipe\graphs\pose_tracking\pose_tracking_cpu.pbtxt" "%SCRIPTS_DIR%\graphs\"
+copy /Y "%MP_ROOT%\mediapipe\graphs\face_mesh\face_mesh_desktop_live.pbtxt" "%SCRIPTS_DIR%\graphs\"
+copy /Y "%MP_ROOT%\mediapipe\modules\face_geometry\face_geometry_from_landmarks.pbtxt" "%SCRIPTS_DIR%\graphs\"
 
-xcopy /Y /E "mediapipe\unreal2\graphs" "%DEPLOY_ROOT%\mediapipe\graphs\"
+
+
+xcopy /Y /E "%SCRIPTS_DIR%\graphs" "%DEPLOY_ROOT%\mediapipe\graphs\"
 
 set /p answer="DEPLOY FILE TO %UNREAL_PLUGIN_DIR% ?" (Y/N)[n]:
 

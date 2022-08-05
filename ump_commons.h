@@ -21,12 +21,12 @@
 #define MP_API
 #endif
 
-typedef struct SerializedProto {
+struct SerializedProto {
     const char* str;
     int length;
 };
 
-typedef struct SerializedProtoArray {
+struct SerializedProtoArray {
     SerializedProto* data;
     int size;
 };

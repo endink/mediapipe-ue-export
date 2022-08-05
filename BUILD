@@ -70,7 +70,7 @@ cc_binary(
 
 cc_binary(
 	name = "ump_app",
-	srcs = ["ump_app.cc"],
+	srcs = ["ump_app.cc", "dummy_packet_callback.cc"],
 	deps = [
 		":ump_core"
 	],

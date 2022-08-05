@@ -188,7 +188,7 @@ absl::Status UmpPipeline::RunImpl()
 
 	for (auto& iter : _observers)
 	{
-		RET_CHECK_OK(iter->ObserveOutputStream(_graph.get()));
+		RET_CHECK_OK(iter->ObserveOutput(_graph.get()));
 	}
 
 	std::unique_ptr<mediapipe::OutputStreamPoller> output_poller;
@@ -240,10 +240,11 @@ absl::Status UmpPipeline::RunImpl()
 	const int cap_resx = (int)capture.get(cv::CAP_PROP_FRAME_WIDTH);
 	const int cap_resy = (int)capture.get(cv::CAP_PROP_FRAME_HEIGHT);
 	const double cap_fps = (double)capture.get(cv::CAP_PROP_FPS);
-	log_i(strf("CAPS: w=%d h=%d fps=%f", cap_resx, cap_resy, cap_fps));
-
+	log_i(strf("capture: w=%d h=%d fps=%f, overlay: %s", cap_resx, cap_resy, cap_fps, _show_overlay ? "true" : "false"));
 	if (_show_overlay)
+	{
 		cv::namedWindow(kWindowName, cv::WINDOW_AUTOSIZE);
+	}
 
 	// start
 
@@ -308,8 +309,8 @@ absl::Status UmpPipeline::RunImpl()
 			mediapipe::Packet packet;
 			if (!output_poller->Next(&packet))
 			{
-				log_e("OutputStreamPoller::Next failed");
-				break;
+				log_w("OutputStreamPoller::Next failed");
+				continue;
 			}
 
 			// TODO: zero copy
