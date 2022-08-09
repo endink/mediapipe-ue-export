@@ -60,6 +60,8 @@ public:
 
 	virtual void SetPacketCallback(IUmpPacketCallback* in_callback) override { _callback = in_callback; }
 
+	virtual IUmpPacketCallback* GetPacketCallback() override { return _callback; }
+
 	virtual class IPacketAPI* GetPacketAPI() override 
 	{ 
 		if (_packetAPI == nullptr) {
@@ -67,6 +69,8 @@ public:
 		}
 		return _packetAPI;
 	}
+
+
 
 protected:
 	std::string _stream_name;

@@ -96,6 +96,7 @@ class IUmpObserver : public IUmpObject
 public:
 	virtual void SetPacketCallback(IUmpPacketCallback* callback) = 0;
 	virtual class IPacketAPI* GetPacketAPI() = 0;
+	virtual IUmpPacketCallback* GetPacketCallback() = 0;
 };
 
 
