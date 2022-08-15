@@ -2,7 +2,7 @@
 
 @echo off
 
-set "UNREAL_PLUGIN_DIR=D:\3D_Works\UE\ue4-mediapipe-plugin-master\Plugins\MediaPipe4U"
+set "UNREAL_PLUGIN_DIR=D:\3D_Works\UE\MediaPipeDemo\Plugins\MediaPipe4U"
 set "INITIAL_DIR=%cd%"
 
 set "SCRIPTS_DIR=%~dp0"
@@ -71,12 +71,15 @@ md "%DEPLOY_ROOT%\mediapipe\modules\pose_landmark"
 
 copy /Y "%MP_ROOT%\mediapipe\modules\pose_detection\pose_detection.tflite" "%DEPLOY_ROOT%\mediapipe\modules\pose_detection\"
 copy /Y "%MP_ROOT%\mediapipe\modules\pose_landmark\pose_landmark_full.tflite" "%DEPLOY_ROOT%\mediapipe\modules\pose_landmark\"
+copy /Y "%MP_ROOT%\mediapipe\modules\pose_landmark\pose_landmark_lite.tflite" "%DEPLOY_ROOT%\mediapipe\modules\pose_landmark\"
+copy /Y "%MP_ROOT%\mediapipe\modules\pose_landmark\pose_landmark_heavy.tflite" "%DEPLOY_ROOT%\mediapipe\modules\pose_landmark\"
 
 :: holistic
 
 md "%DEPLOY_ROOT%\mediapipe\modules\holistic_landmark"
 
 copy /Y "%MP_ROOT%\mediapipe\modules\holistic_landmark\hand_recrop.tflite" "%DEPLOY_ROOT%\mediapipe\modules\holistic_landmark\"
+copy /Y "%MP_ROOT%\mediapipe\modules\holistic_landmark\handedness.txt" "%DEPLOY_ROOT%\mediapipe\modules\holistic_landmark\"
 
 :: objectron
 
@@ -92,11 +95,13 @@ copy /Y "%MP_ROOT%\mediapipe\graphs\pose_tracking\pose_tracking_cpu.pbtxt" "%SCR
 copy /Y "%MP_ROOT%\mediapipe\graphs\face_mesh\face_mesh_desktop_live.pbtxt" "%SCRIPTS_DIR%\graphs\"
 copy /Y "%MP_ROOT%\mediapipe\modules\face_geometry\face_geometry_from_landmarks.pbtxt" "%SCRIPTS_DIR%\graphs\"
 
+copy /Y "%MP_ROOT%\mediapipe\modules\holistic_landmark\holistic_landmark_cpu.pbtxt" "%SCRIPTS_DIR%\graphs\"
+
 
 
 xcopy /Y /E "%SCRIPTS_DIR%\graphs" "%DEPLOY_ROOT%\mediapipe\graphs\"
 
-set /p answer="DEPLOY FILE TO %UNREAL_PLUGIN_DIR% ?" (Y/N)[n]:
+set /p answer="DEPLOY FILE TO %UNREAL_PLUGIN_DIR% ? (y/n)[n]" :
 
 if not %answer% == y goto QUIT
 
@@ -108,9 +113,9 @@ md "%DLL_DIR%"
 copy /Y "%DEPLOY_ROOT%\mediapipe_api.dll" "%DLL_DIR%\"
 copy /Y "%DEPLOY_ROOT%\opencv_world3410.dll" "%DLL_DIR%\"
 :: copy /Y "%DEPLOY_ROOT%\opencv_world3410.dll" "%UNREAL_PLUGIN_DIR%\ThirdParty\mediapipe\Binaries\Win64\"
-copy /Y "%SCRIPTS_DIR%\ump_commons.h" "%UNREAL_PLUGIN_DIR%\Source\MediaPipe\Public\"
-copy /Y "%SCRIPTS_DIR%\ump_api.h" "%UNREAL_PLUGIN_DIR%\Source\MediaPipe\Public\"
-copy /Y "%SCRIPTS_DIR%\ump_packet.h" "%UNREAL_PLUGIN_DIR%\Source\MediaPipe\Public\"
+copy /Y "%SCRIPTS_DIR%\ump_commons.h" "%UNREAL_PLUGIN_DIR%\Source\MediaPipe\Public\Core\"
+copy /Y "%SCRIPTS_DIR%\ump_api.h" "%UNREAL_PLUGIN_DIR%\Source\MediaPipe\Public\Core\"
+copy /Y "%SCRIPTS_DIR%\ump_packet.h" "%UNREAL_PLUGIN_DIR%\Source\MediaPipe\Public\Core\"
 xcopy /Y /E "%MP_ROOT%\bazel-bin\mediapipe\%FN%\mediapipe" "%UNREAL_PLUGIN_DIR%\Source\ThirdParty\mediapipe\Data\mediapipe\"
 
 cd "%INITIAL_DIR%"

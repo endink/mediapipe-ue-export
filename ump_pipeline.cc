@@ -258,7 +258,7 @@ absl::Status UmpPipeline::RunImpl()
 
 	double t0 = get_timestamp_us();
 
-	log_i("MAIN LOOP");
+	log_i("------------> Loop In Enter MediaPipe Work Thread <------------");
 	while (_run_flag)
 	{
 		double t1 = get_timestamp_us();
