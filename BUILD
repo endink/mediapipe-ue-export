@@ -24,7 +24,7 @@ cc_library(
      "packet.cc", 
      "landmarks_packet.cc", 
      "face_geometry_packet.cc", 
-     "classification_packet.cpp",
+     "classification_packet.cc",
      "packet_api.cc"
 	],
 	deps = [

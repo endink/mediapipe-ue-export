@@ -8,6 +8,7 @@ using UmpPipelineBase = UmpObject<IUmpPipeline>;
 
 class UmpPipeline : public UmpPipelineBase
 {
+	typedef std::map<std::string, mediapipe::Packet> SidePacket;
 protected:
 	virtual ~UmpPipeline() override;
 
@@ -20,17 +21,18 @@ public:
 	virtual void SetOverlay(bool overlay) override;
 	virtual IUmpObserver* CreateObserver(const char* stream_name) override;
 	virtual void SetFrameCallback(class IUmpFrameCallback* callback) override;
-	virtual bool Start() override;
+	virtual bool Start(void* side_packet) override;
 	virtual void Stop() override;
+	virtual IPacketAPI* GetPacketAPI() override;
 
 	virtual void LogProfilerStats() override;
 	virtual uint64_t GetLastFrameId() override { return _frame_id; }
 	virtual double GetLastFrameTimestamp() override { return _frame_ts; }
 
 private:
-	void WorkerThread();
+	void WorkerThread(SidePacket side_packet);
 	void ShutdownImpl();
-	absl::Status RunImpl();
+	absl::Status RunImpl(SidePacket side_packet);
 	absl::Status LoadGraphConfig(const std::string& filename, std::string& out_str);
 	absl::Status LoadResourceFile(const std::string& filename, std::string& out_str);
 	class UmpFrame* AllocFrame();
@@ -57,6 +59,7 @@ private:
 	std::mutex _frame_mux;
 
 	std::shared_ptr<mediapipe::CalculatorGraph> _graph;
+	std::shared_ptr<IPacketAPI> _packet_api;
 
 	std::unique_ptr<std::thread> _worker;
 	std::atomic<bool> _run_flag;

@@ -21,6 +21,7 @@
 UmpPipeline::UmpPipeline()
 {
 	log_d("+UmpPipeline");
+	_packet_api.reset(new PacketAPI());
 }
 
 UmpPipeline::~UmpPipeline()
@@ -65,7 +66,7 @@ IUmpObserver* UmpPipeline::CreateObserver(const char* stream_name)
 		log_e("Invalid state: pipeline running");
 		return nullptr;
 	}
-	auto* observer = new UmpObserver(stream_name);
+	auto* observer = new UmpObserver(stream_name, _packet_api);
 	observer->AddRef();
 	_observers.emplace_back(observer);
 	return observer;
@@ -77,7 +78,7 @@ void UmpPipeline::SetFrameCallback(class IUmpFrameCallback* callback)
 	_frame_callback = callback;
 }
 
-bool UmpPipeline::Start()
+bool UmpPipeline::Start(void* side_packet)
 {
 	Stop();
 	try
@@ -86,7 +87,8 @@ bool UmpPipeline::Start()
 		_frame_id = 0;
 		_frame_ts = 0;
 		_run_flag = true;
-		_worker = std::make_unique<std::thread>([this]() { this->WorkerThread(); });
+		SidePacket packet = side_packet != nullptr ?  *((SidePacket*)side_packet) : SidePacket();
+		_worker = std::make_unique<std::thread>([this, packet]() { this->WorkerThread(packet); });
 		log_i("UmpPipeline::Start OK");
 		return true;
 	}
@@ -116,13 +118,18 @@ void UmpPipeline::Stop()
 	}
 }
 
-void UmpPipeline::WorkerThread()
+IPacketAPI* UmpPipeline::GetPacketAPI()
+{
+	return _packet_api.get();
+}
+
+void UmpPipeline::WorkerThread(SidePacket side_packet)
 {
 	log_i("Enter WorkerThread");
 	// RUN
 	try
 	{
-		auto status = this->RunImpl();
+		auto status = this->RunImpl(side_packet);
 		if (!status.ok())
 		{
 			std::string msg(status.message());
@@ -165,7 +172,7 @@ inline double get_timestamp_us() // microseconds
 	return (double)cv::getTickCount() / (double)cv::getTickFrequency() * 1e6;
 }
 
-absl::Status UmpPipeline::RunImpl()
+absl::Status UmpPipeline::RunImpl(SidePacket side_packet)
 {
 	constexpr char kInputStream[] = "input_video";
 	constexpr char kOutputStream[] = "output_video";
@@ -178,7 +185,7 @@ absl::Status UmpPipeline::RunImpl()
 	std::string config_str;
 	RET_CHECK_OK(LoadGraphConfig(_config_filename, config_str));
 
-	log_i("ParseTextProto");
+	log_i("Parse Graph Proto");
 	mediapipe::CalculatorGraphConfig config;
 	RET_CHECK(mediapipe::ParseTextProto<mediapipe::CalculatorGraphConfig>(config_str, &config));
 
@@ -253,12 +260,21 @@ absl::Status UmpPipeline::RunImpl()
 
 	auto frame_dtor = [](UmpFrame* frame) {  };
 
-	log_i("CalculatorGraph::StartRun");
-	RET_CHECK_OK(_graph->StartRun({}));
+	RET_CHECK_OK(_graph->StartRun(side_packet));
+
+	std::string str = "CalculatorGraph::StartRun\n";
+	if (side_packet.size() > 0)
+	{
+		for (auto& value : side_packet) {
+			str += strf("%s : %s\n", value.first.c_str(), value.second.DebugString().c_str());
+		}
+	}
+	log_i(str);
 
 	double t0 = get_timestamp_us();
 
-	log_i("------------> Loop In Enter MediaPipe Work Thread <------------");
+	log_i("------------> Start Loop Work Thread <------------");
+	bool firstLoop = true;
 	while (_run_flag)
 	{
 		double t1 = get_timestamp_us();
@@ -300,6 +316,11 @@ absl::Status UmpPipeline::RunImpl()
 				kInputStream,
 				mediapipe::Adopt(input_mif.release())
 				.At(mediapipe::Timestamp((size_t)frame_timestamp_us))));
+
+			if (firstLoop)
+			{
+				log_i("CalculatorGraph::AddPacketToInputStream OK");
+			}
 		}
 
 		if (output_poller)
@@ -355,6 +376,10 @@ absl::Status UmpPipeline::RunImpl()
 		}
 
 		_frame_id++;
+		if (firstLoop)
+		{
+			firstLoop = false;
+		}
 	}
 
 	log_i("CalculatorGraph::CloseInputStream");

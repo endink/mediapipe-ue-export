@@ -119,7 +119,7 @@
     <ClCompile Include="..\packet_api.cc">
       <Filter>core</Filter>
     </ClCompile>
-    <ClCompile Include="..\classification_packet.cpp">
+    <ClCompile Include="..\classification_packet.cc">
       <Filter>core</Filter>
     </ClCompile>
     <ClCompile Include="..\dummy_packet_callback.cc">

@@ -71,8 +71,9 @@ public:
 	virtual void SetOverlay(bool overlay) = 0;
 	virtual class IUmpObserver* CreateObserver(const char* stream_name) = 0;
 	virtual void SetFrameCallback(class IUmpFrameCallback* callback) = 0;
-	virtual bool Start() = 0;
+	virtual bool Start(void* side_packet = nullptr) = 0;
 	virtual void Stop() = 0;
+	virtual IPacketAPI* GetPacketAPI() = 0;
 
 	// debug
 	virtual void LogProfilerStats() = 0;

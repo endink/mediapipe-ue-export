@@ -15,7 +15,8 @@
 #include <mutex>
 
 #include <iostream>  
-#include <exception> 
+#include <exception>
+#include <map>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
@@ -37,17 +38,30 @@
   return 0;            \
   }            \
   catch (std::exception & e) {            \
-    std::cerr << e.what() << std::endl;            \
+    log(EUmpVerbosity::Error,  e.what());            \
   }            \
   catch (...) {            \
-    std::cerr << "Unknown exception occured" << std::endl;            \
+    log(EUmpVerbosity::Error, "Unknown exception occured");            \
   }            \
 return -1; 
 
+
+#define CATCH_ONLY                            \
+  }            \
+  catch (std::exception & e) {            \
+    log(EUmpVerbosity::Error,  e.what());           \
+  }            \
+  catch (...) {            \
+     log(EUmpVerbosity::Error, "Unknown exception occured");             \
+  }            
+
+
+
  
 // Globals
-
 extern IUmpLog* _ump_log;
+
+inline void log(EUmpVerbosity verbosity, const char* msg) { if (_ump_log) { _ump_log->Println(verbosity, msg); } }
 
 // String
 

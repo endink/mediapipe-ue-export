@@ -9,16 +9,18 @@ using UmpObserverBase = UmpObject<IUmpObserver>;
 class UmpObserver : public UmpObserverBase
 {
 protected:
-	virtual ~UmpObserver() override { 
-		if (_packetAPI != nullptr)
-		{
-			delete _packetAPI;
-		}
+	virtual ~UmpObserver() override 
+	{ 
 		log_d(strf("~UmpObserver %s", *_stream_name)); 
 	}
 
 public:
-	UmpObserver(const char* in_stream_name) : _stream_name(in_stream_name) { log_d(strf("+UmpObserver %s", *_stream_name)); }
+	UmpObserver(const char* in_stream_name, const std::shared_ptr<IPacketAPI>& packet_api) : 
+		_stream_name(in_stream_name), 
+		_packet_api{ packet_api }
+	{ 
+		log_d(strf("+UmpObserver %s", *_stream_name)); 
+	}
 
 
 	absl::Status ObserveOutput(mediapipe::CalculatorGraph* graph)
@@ -47,7 +49,7 @@ public:
 					auto s = _callback->OnUmpPacket(this, const_cast<void*>(p));
 					if (!s)
 					{
-						return absl::AbortedError("OnUmpPacket error.");
+						return absl::AbortedError(strf("OnUmpPacket fault (stream = %s).", _stream_name.c_str()));
 					}
 				}
 			}
@@ -64,10 +66,7 @@ public:
 
 	virtual class IPacketAPI* GetPacketAPI() override 
 	{ 
-		if (_packetAPI == nullptr) {
-			_packetAPI = new PacketAPI();
-		}
-		return _packetAPI;
+		return _packet_api.get();
 	}
 
 
@@ -76,5 +75,5 @@ protected:
 	std::string _stream_name;
 	IUmpPacketCallback* _callback = nullptr;
 	bool _presence = false;
-	IPacketAPI* _packetAPI = nullptr;
+	std::shared_ptr<IPacketAPI> _packet_api;
 };

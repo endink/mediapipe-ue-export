@@ -10,19 +10,15 @@
 #include <string>
 #include <utility>
 
-int mp_Packet__(mediapipe::Packet** packet_out) {
-    TRY
-    *packet_out = new mediapipe::Packet();
-    CATCH_EXCEPTION
-}
 
 void mp_Packet__delete(mediapipe::Packet* packet) { delete packet; }
 
-int mp_Packet__At__Rt(mediapipe::Packet* packet, mediapipe::Timestamp* timestamp, mediapipe::Packet** packet_out) {
-  TRY
+mediapipe::Packet* mp_Packet__At__Rt(mediapipe::Packet* packet, mediapipe::Timestamp* timestamp) {
+ TRY
     // not move but copy
-   *packet_out = new mediapipe::Packet{packet->At(*timestamp)};
-  CATCH_EXCEPTION
+   return new mediapipe::Packet{packet->At(*timestamp)};
+ CATCH_ONLY
+   return nullptr;
 }
 
 bool mp_Packet__IsEmpty(mediapipe::Packet* packet) { return packet->IsEmpty(); }
@@ -58,16 +54,18 @@ int mp_Packet__DebugTypeName(mediapipe::Packet* packet, const char** str_out) {
 }
 
 // BoolPacket
-int mp__MakeBoolPacket__b(bool value, mediapipe::Packet** packet_out) {
+mediapipe::Packet* mp__MakeBoolPacket__b(bool value) {
   TRY
-    *packet_out = new mediapipe::Packet{mediapipe::MakePacket<bool>(value)};
-  CATCH_EXCEPTION
+    return new mediapipe::Packet{mediapipe::MakePacket<bool>(value)};
+  CATCH_ONLY
+    return nullptr;
 }
 
-int mp__MakeBoolPacket_At__b_Rt(bool value, mediapipe::Timestamp* timestamp, mediapipe::Packet** packet_out) {
+mediapipe::Packet* mp__MakeBoolPacket_At__b_Rt(bool value, mediapipe::Timestamp* timestamp) {
   TRY
-    *packet_out = new mediapipe::Packet{mediapipe::MakePacket<bool>(value).At(*timestamp)};
-  CATCH_EXCEPTION
+    return new mediapipe::Packet{mediapipe::MakePacket<bool>(value).At(*timestamp)};
+  CATCH_ONLY
+      return nullptr;
 }
 
 int mp_Packet__GetBool(mediapipe::Packet* packet, bool* value_out) {
@@ -83,16 +81,18 @@ int mp_Packet__ValidateAsBool(mediapipe::Packet* packet, absl::Status** status_o
 }
 
 // FloatPacket
-int mp__MakeFloatPacket__f(float value, mediapipe::Packet** packet_out) {
+mediapipe::Packet* mp__MakeFloatPacket__f(float value) {
   TRY
-    *packet_out = new mediapipe::Packet{mediapipe::MakePacket<float>(value)};
-  CATCH_EXCEPTION
+    return new mediapipe::Packet{mediapipe::MakePacket<float>(value)};
+  CATCH_ONLY
+      return nullptr;
 }
 
-int mp__MakeFloatPacket_At__f_Rt(float value, mediapipe::Timestamp* timestamp, mediapipe::Packet** packet_out) {
+mediapipe::Packet* mp__MakeFloatPacket_At__f_Rt(float value, mediapipe::Timestamp* timestamp) {
   TRY
-    *packet_out = new mediapipe::Packet{mediapipe::MakePacket<float>(value).At(*timestamp)};
-  CATCH_EXCEPTION
+    return new mediapipe::Packet{mediapipe::MakePacket<float>(value).At(*timestamp)};
+  CATCH_ONLY
+      return nullptr;
 }
 
 int mp_Packet__GetFloat(mediapipe::Packet* packet, float* value_out) {
@@ -108,16 +108,18 @@ int mp_Packet__ValidateAsFloat(mediapipe::Packet* packet, absl::Status** status_
 }
 
 // IntPacket
-int mp__MakeIntPacket__i(int value, mediapipe::Packet** packet_out) {
+mediapipe::Packet* mp__MakeIntPacket__i(int value) {
   TRY
-    *packet_out = new mediapipe::Packet{mediapipe::MakePacket<int>(value)};
-  CATCH_EXCEPTION
+    return new mediapipe::Packet{mediapipe::MakePacket<int>(value)};
+  CATCH_ONLY
+      return nullptr;
 }
 
-int mp__MakeIntPacket_At__i_Rt(int value, mediapipe::Timestamp* timestamp, mediapipe::Packet** packet_out) {
+mediapipe::Packet* mp__MakeIntPacket_At__i_Rt(int value, mediapipe::Timestamp* timestamp) {
   TRY
-    *packet_out = new mediapipe::Packet{mediapipe::MakePacket<int>(value).At(*timestamp)};
-  CATCH_EXCEPTION
+    return new mediapipe::Packet{mediapipe::MakePacket<int>(value).At(*timestamp)};
+  CATCH_ONLY
+      return nullptr;
 }
 
 int mp_Packet__GetInt(mediapipe::Packet* packet, int* value_out) {
@@ -133,20 +135,22 @@ int mp_Packet__ValidateAsInt(mediapipe::Packet* packet, absl::Status** status_ou
 }
 
 // FloatArrayPacket
-int mp__MakeFloatArrayPacket__Pf_i(float* value, int size, mediapipe::Packet** packet_out) {
+mediapipe::Packet* mp__MakeFloatArrayPacket__Pf_i(float* value, int size) {
   TRY
     float* array = new float[size];
     std::memcpy(array, value, size * sizeof(float));
-    *packet_out = new mediapipe::Packet{mediapipe::Adopt(reinterpret_cast<float(*)[]>(array))};
-  CATCH_EXCEPTION
+    return new mediapipe::Packet{mediapipe::Adopt(reinterpret_cast<float(*)[]>(array))};
+    CATCH_ONLY
+        return nullptr;
 }
 
-int mp__MakeFloatArrayPacket_At__Pf_i_Rt(float* value, int size, mediapipe::Timestamp* timestamp, mediapipe::Packet** packet_out) {
+mediapipe::Packet* mp__MakeFloatArrayPacket_At__Pf_i_Rt(float* value, int size, mediapipe::Timestamp* timestamp) {
   TRY
-    float* array = new float[size];
-    std::memcpy(array, value, size * sizeof(float));
-    *packet_out = new mediapipe::Packet{mediapipe::Adopt(reinterpret_cast<float(*)[]>(array)).At(*timestamp)};
-  CATCH_EXCEPTION
+        float* array = new float[size];
+        std::memcpy(array, value, size * sizeof(float));
+        return new mediapipe::Packet{mediapipe::Adopt(reinterpret_cast<float(*)[]>(array)).At(*timestamp)};
+    CATCH_ONLY
+        return nullptr;
 }
 
 int mp_Packet__GetFloatArray(mediapipe::Packet* packet, const float** value_out) {
@@ -162,28 +166,32 @@ int mp_Packet__ValidateAsFloatArray(mediapipe::Packet* packet, absl::Status** st
 }
 
 // StringPacket
-int mp__MakeStringPacket__PKc(const char* str, mediapipe::Packet** packet_out) {
+mediapipe::Packet* mp__MakeStringPacket__PKc(const char* str) {
   TRY
-    *packet_out = new mediapipe::Packet{mediapipe::MakePacket<std::string>(std::string(str))};
-  CATCH_EXCEPTION
+    return new mediapipe::Packet{mediapipe::MakePacket<std::string>(std::string(str))};
+  CATCH_ONLY
+      return nullptr;
 }
 
-int mp__MakeStringPacket_At__PKc_Rt(const char* str, mediapipe::Timestamp* timestamp, mediapipe::Packet** packet_out) {
+mediapipe::Packet* mp__MakeStringPacket_At__PKc_Rt(const char* str, mediapipe::Timestamp* timestamp) {
   TRY
-    *packet_out = new mediapipe::Packet{mediapipe::MakePacket<std::string>(std::string(str)).At(*timestamp)};
-  CATCH_EXCEPTION
+    return new mediapipe::Packet{mediapipe::MakePacket<std::string>(std::string(str)).At(*timestamp)};
+  CATCH_ONLY
+      return nullptr;
 }
 
-int mp__MakeStringPacket__PKc_i(const char* str, int size, mediapipe::Packet** packet_out) {
+mediapipe::Packet* mp__MakeStringPacket__PKc_i(const char* str, int size) {
   TRY
-    *packet_out = new mediapipe::Packet{mediapipe::MakePacket<std::string>(std::string(str, size))};
-  CATCH_EXCEPTION
+    return new mediapipe::Packet{mediapipe::MakePacket<std::string>(std::string(str, size))};
+  CATCH_ONLY
+      return nullptr;
 }
 
-int mp__MakeStringPacket_At__PKc_i_Rt(const char* str, int size, mediapipe::Timestamp* timestamp, mediapipe::Packet** packet_out) {
+mediapipe::Packet* mp__MakeStringPacket_At__PKc_i_Rt(const char* str, int size, mediapipe::Timestamp* timestamp) {
   TRY
-    *packet_out = new mediapipe::Packet{mediapipe::MakePacket<std::string>(std::string(str, size)).At(*timestamp)};
-  CATCH_EXCEPTION
+    return new mediapipe::Packet{mediapipe::MakePacket<std::string>(std::string(str, size)).At(*timestamp)};
+  CATCH_ONLY
+      return nullptr;
 }
 
 int mp_Packet__GetString(mediapipe::Packet* packet, const char** value_out) {
@@ -222,12 +230,6 @@ int mp_Packet__ValidateAsString(mediapipe::Packet* packet, absl::Status** status
   CATCH_EXCEPTION
 }
 
-/** SidePacket */
-int mp_SidePacket__(SidePacket** side_packet_out) {
-  TRY
-    *side_packet_out = new SidePacket();
-  CATCH_EXCEPTION
-}
 
 void mp_SidePacket__delete(SidePacket* side_packet) { delete side_packet; }
 

@@ -25,7 +25,6 @@ public:
 	virtual void Release() override { ReleaseImpl(); }
 	virtual void AddRef() override { AddRefImpl(); }
 
-	inline void log(EUmpVerbosity verbosity, const char* msg) const { if (_ump_log) { _ump_log->Println(verbosity, msg); } }
 	inline void log_e(const char* msg) const { log(EUmpVerbosity::Error, msg); }
 	inline void log_w(const char* msg) const { log(EUmpVerbosity::Warning, msg); }
 	inline void log_i(const char* msg) const { log(EUmpVerbosity::Info, msg); }

@@ -39,7 +39,7 @@
     <ClInclude Include="..\ump_pipeline.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\classification_packet.cpp" />
+    <ClCompile Include="..\classification_packet.cc" />
     <ClCompile Include="..\dummy_packet_callback.cc" />
     <ClCompile Include="..\face_geometry_packet.cc" />
     <ClCompile Include="..\landmarks_packet.cc" />
