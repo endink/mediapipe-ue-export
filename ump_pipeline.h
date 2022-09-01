@@ -18,7 +18,9 @@ public:
 	virtual void SetGraphConfiguration(const char* filename) override;
 	virtual void SetCaptureFromFile(const char* filename) override;
 	virtual void SetCaptureParams(int cam_id, int cam_api, int cam_resx, int cam_resy, int cam_fps) override;
-	virtual void SetOverlay(bool overlay) override;
+	virtual void ShowVideoWindow(bool shown) override;
+	inline virtual void EnableFrameCallback(bool enabled) override { _frame_callback_enabled = enabled; };
+	inline virtual bool IsFrameCallbackEnabled() override { return _frame_callback_enabled; };
 	virtual IUmpObserver* CreateObserver(const char* stream_name) override;
 	virtual void SetFrameCallback(class IUmpFrameCallback* callback) override;
 	virtual bool Start(void* side_packet) override;
@@ -49,7 +51,8 @@ private:
 	int _cam_resy = 0;
 	int _cam_fps = 0;
 	bool _use_camera = false;
-	bool _show_overlay = false;
+	bool _show_video_winow = false;
+	bool _frame_callback_enabled = true;
 
 	using ObserverPtr = std::unique_ptr<class UmpObserver, IUmpObject::Dtor>;
 	std::list<ObserverPtr> _observers;

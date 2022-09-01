@@ -52,11 +52,12 @@ void UmpPipeline::SetCaptureParams(int cam_id, int cam_api, int cam_resx, int ca
 	_cam_fps = cam_fps;
 }
 
-void UmpPipeline::SetOverlay(bool in_overlay)
+void UmpPipeline::ShowVideoWindow(bool show)
 {
-	log_i(strf("SetOverlay: %d", (in_overlay ? 1 : 0)));
-	_show_overlay = in_overlay;
+	log_i(strf("ShowVideo: %d", (show ? 1 : 0)));
+	_show_video_winow = show;
 }
+
 
 IUmpObserver* UmpPipeline::CreateObserver(const char* stream_name)
 {
@@ -159,7 +160,7 @@ void UmpPipeline::ShutdownImpl()
 	_graph.reset();
 	_observers.clear();
 
-	if (_show_overlay)
+	if (_show_video_winow)
 		cv::destroyAllWindows();
 
 	ReleaseFramePool();
@@ -199,7 +200,7 @@ absl::Status UmpPipeline::RunImpl(SidePacket side_packet)
 	}
 
 	std::unique_ptr<mediapipe::OutputStreamPoller> output_poller;
-	if (_show_overlay || _frame_callback)
+	if (_show_video_winow || (_frame_callback && _frame_callback_enabled))
 	{
 		//ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller, graph->AddOutputStreamPoller(kOutputStream));
 		auto output_poller_sop = _graph->AddOutputStreamPoller(kOutputStream);
@@ -247,8 +248,8 @@ absl::Status UmpPipeline::RunImpl(SidePacket side_packet)
 	const int cap_resx = (int)capture.get(cv::CAP_PROP_FRAME_WIDTH);
 	const int cap_resy = (int)capture.get(cv::CAP_PROP_FRAME_HEIGHT);
 	const double cap_fps = (double)capture.get(cv::CAP_PROP_FPS);
-	log_i(strf("capture: w=%d h=%d fps=%f, overlay: %s", cap_resx, cap_resy, cap_fps, _show_overlay ? "true" : "false"));
-	if (_show_overlay)
+	log_i(strf("capture: w=%d h=%d fps=%f, overlay: %s", cap_resx, cap_resy, cap_fps, _show_video_winow ? "true" : "false"));
+	if (_show_video_winow)
 	{
 		cv::namedWindow(kWindowName, cv::WINDOW_AUTOSIZE);
 	}
@@ -275,6 +276,7 @@ absl::Status UmpPipeline::RunImpl(SidePacket side_packet)
 
 	log_i("------------> Start Loop Work Thread <------------");
 	bool firstLoop = true;
+	int maxEmptyCount = 60;
 	while (_run_flag)
 	{
 		double t1 = get_timestamp_us();
@@ -290,8 +292,16 @@ absl::Status UmpPipeline::RunImpl(SidePacket side_packet)
 
 		if (!_use_camera && cvmat_bgr.empty())
 		{
-			log_i("VideoCapture: EOF");
-			break;
+			maxEmptyCount--;
+			if (maxEmptyCount > 0)
+			{
+				continue;
+			}
+			else
+			{
+				log_e("VideoCapture: frame is empty !");
+				break;
+			}
 		}
 
 		const double frame_timestamp_us = get_timestamp_us();
@@ -301,8 +311,8 @@ absl::Status UmpPipeline::RunImpl(SidePacket side_packet)
 			PROF_NAMED("enque_frame");
 
 			cv::cvtColor(cvmat_bgr, cvmat_rgb, cv::COLOR_BGR2RGB);
-			if (_use_camera)
-				cv::flip(cvmat_rgb, cvmat_rgb, 1);
+			/*if (_use_camera)
+				cv::flip(cvmat_rgb, cvmat_rgb, 1);*/
 
 			auto input_mif = absl::make_unique<mediapipe::ImageFrame>(
 				mediapipe::ImageFormat::SRGB, cvmat_rgb.cols, cvmat_rgb.rows,
@@ -347,7 +357,7 @@ absl::Status UmpPipeline::RunImpl(SidePacket side_packet)
 				_frame_callback->OnUmpFrame(static_cast<IUmpFrame*>(frame)); // unreal should call frame->Release()
 			}
 
-			if (_show_overlay)
+			if (_show_video_winow)
 			{
 				auto stat = strf("%.0f | %.4f | %" PRIu64 "", _frame_ts, dt * 0.001, _frame_id);
 				cv::putText(output_mif_view, *stat, cv::Point(10, 20), cv::FONT_HERSHEY_PLAIN, 1, cv::Scalar(0, 255, 0));
@@ -385,7 +395,7 @@ absl::Status UmpPipeline::RunImpl(SidePacket side_packet)
 	log_i("CalculatorGraph::CloseInputStream");
 	_graph->CloseInputStream(kInputStream);
 	_graph->WaitUntilDone();
-
+	_run_flag = false;
 	return absl::OkStatus();
 }
 

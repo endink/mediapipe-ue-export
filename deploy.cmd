@@ -111,7 +111,7 @@ SET "DLL_DIR=%UNREAL_PLUGIN_DIR%\Source\ThirdParty\mediapipe\DLL\Win64"
 
 md "%DLL_DIR%"
 copy /Y "%DEPLOY_ROOT%\mediapipe_api.dll" "%DLL_DIR%\"
-copy /Y "%DEPLOY_ROOT%\mediapipe_api.dll" "%UNREAL_PLUGIN_DIR%\Binaries\ThirdParty\Win64\"
+:: copy /Y "%DEPLOY_ROOT%\mediapipe_api.dll" "%UNREAL_PLUGIN_DIR%\Binaries\ThirdParty\Win64\"
 copy /Y "%DEPLOY_ROOT%\opencv_world3410.dll" "%DLL_DIR%\"
 :: copy /Y "%DEPLOY_ROOT%\opencv_world3410.dll" "%UNREAL_PLUGIN_DIR%\ThirdParty\mediapipe\Binaries\Win64\"
 copy /Y "%SCRIPTS_DIR%\ump_commons.h" "%UNREAL_PLUGIN_DIR%\Source\MediaPipe\Public\Core\"
