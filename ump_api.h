@@ -5,7 +5,6 @@
 
 #include "ump_commons.h"
 #include "ump_packet.h"
-#include <mediapipe/framework/port/integral_types.h>
 
 //
 // Log
