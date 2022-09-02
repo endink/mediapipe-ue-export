@@ -43,6 +43,17 @@
   catch (...) {            \
     log(EUmpVerbosity::Error, "Unknown exception occured");            \
   }            \
+return -1;
+
+#define CATCH_RETURN(RET)                            \
+return RET;            \
+}            \
+catch (std::exception & e) {            \
+log(EUmpVerbosity::Error,  e.what());            \
+}            \
+catch (...) {            \
+log(EUmpVerbosity::Error, "Unknown exception occured");            \
+}            \
 return -1; 
 
 

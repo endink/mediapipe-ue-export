@@ -15,15 +15,17 @@ protected:
 public:
 	UmpPipeline();
 
+	int AddImageFrameIntoStream(const char* stream_name, MediaPipeImageFormat format, int width, int height, int width_step,  uint8* pixel_data);
 	virtual void SetGraphConfiguration(const char* filename) override;
 	virtual void SetCaptureFromFile(const char* filename) override;
-	virtual void SetCaptureParams(int cam_id, int cam_api, int cam_resx, int cam_resy, int cam_fps) override;
-	virtual void ShowVideoWindow(bool shown) override;
+	virtual void SetCaptureFromCamera(int cam_id, int cam_api, int cam_resx, int cam_resy, int cam_fps) override;
+	virtual void ShowVideoWindow(bool show) override;
 	inline virtual void EnableFrameCallback(bool enabled) override { _frame_callback_enabled = enabled; };
 	inline virtual bool IsFrameCallbackEnabled() override { return _frame_callback_enabled; };
 	virtual IUmpObserver* CreateObserver(const char* stream_name) override;
 	virtual void SetFrameCallback(class IUmpFrameCallback* callback) override;
 	virtual bool Start(void* side_packet) override;
+	virtual bool StartImageSource(IImageSource* image_source, void* side_packet) override;
 	virtual void Stop() override;
 	virtual IPacketAPI* GetPacketAPI() override;
 
@@ -32,9 +34,10 @@ public:
 	virtual double GetLastFrameTimestamp() override { return _frame_ts; }
 
 private:
-	void WorkerThread(SidePacket side_packet);
+	void WorkerThread(SidePacket side_packet, IImageSource* image_source);
 	void ShutdownImpl();
-	absl::Status RunImpl(SidePacket side_packet);
+	absl::Status RunImageImpl(SidePacket side_packet, IImageSource* image_source);
+	absl::Status RunCaptureImpl(SidePacket side_packet);
 	absl::Status LoadGraphConfig(const std::string& filename, std::string& out_str);
 	absl::Status LoadResourceFile(const std::string& filename, std::string& out_str);
 	class UmpFrame* AllocFrame();
@@ -45,7 +48,7 @@ private:
 	std::string resource_dir;
 	std::string _config_filename;
 	std::string _input_filename;
-	int _cam_id = 0;
+	int _cam_id = -1;
 	int _cam_api = 0;
 	int _cam_resx = 0;
 	int _cam_resy = 0;

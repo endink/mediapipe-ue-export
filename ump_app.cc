@@ -24,8 +24,8 @@ int main(int argc, char* argv[])
 		context->SetResourceDir("");
 
 		UMP_UNIQ(IUmpPipeline) pipe(context->CreatePipeline());
-		pipe->SetCaptureParams(0, cv::CAP_DSHOW, 0, 0, 0); // CAP_DSHOW | CAP_MSMF
-		pipe->SetOverlay(true);
+		pipe->SetCaptureFromCamera(0, cv::CAP_DSHOW, 0, 0, 0); // CAP_DSHOW | CAP_MSMF
+		pipe->ShowVideoWindow(true);
 
 		std::vector<UMP_UNIQ(IUmpObserver)> observers;
 

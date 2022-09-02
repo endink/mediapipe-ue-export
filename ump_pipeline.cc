@@ -18,10 +18,37 @@
 #include <chrono>
 #include <thread>
 
+inline double get_timestamp_us() // microseconds
+{
+	return static_cast<double>(cv::getTickCount()) / (double)cv::getTickFrequency() * 1e6;
+}
+
 UmpPipeline::UmpPipeline()
 {
 	log_d("+UmpPipeline");
 	_packet_api.reset(new PacketAPI());
+}
+
+int UmpPipeline::AddImageFrameIntoStream(const char* stream_name, MediaPipeImageFormat format, int width, int height, int width_step,  uint8* pixel_data)
+{
+	TRY
+	auto* image_frame_out = new mediapipe::ImageFrame
+	{
+		static_cast<mediapipe::ImageFormat::Format>(static_cast<int>(format)),
+		width,
+		height,
+		width_step,
+		pixel_data,
+		[](uint8*){}
+	};
+
+	mediapipe::Timestamp ts(static_cast<int64>(get_timestamp_us()));
+	auto* packet_in = new mediapipe::Packet{mediapipe::MakePacket<mediapipe::ImageFrame>(std::move(*image_frame_out)).At(ts)};
+	auto status = _graph->AddPacketToInputStream(stream_name, std::move(*packet_in));
+	delete image_frame_out;
+	delete packet_in;
+	int result = status.ok() ? 0 : status.raw_code();
+	CATCH_RETURN(result);
 }
 
 UmpPipeline::~UmpPipeline()
@@ -42,7 +69,7 @@ void UmpPipeline::SetCaptureFromFile(const char* filename)
 	_input_filename = filename;
 }
 
-void UmpPipeline::SetCaptureParams(int cam_id, int cam_api, int cam_resx, int cam_resy, int cam_fps)
+void UmpPipeline::SetCaptureFromCamera(int cam_id, int cam_api, int cam_resx, int cam_resy, int cam_fps)
 {
 	log_i(strf("SetCaptureParams: cam=%d api=%d w=%d h=%d fps=%d", cam_id, cam_api, cam_resx, cam_resy, cam_fps));
 	_cam_id = cam_id;
@@ -89,7 +116,28 @@ bool UmpPipeline::Start(void* side_packet)
 		_frame_ts = 0;
 		_run_flag = true;
 		SidePacket packet = side_packet != nullptr ?  *((SidePacket*)side_packet) : SidePacket();
-		_worker = std::make_unique<std::thread>([this, packet]() { this->WorkerThread(packet); });
+		_worker = std::make_unique<std::thread>([this, packet]() { this->WorkerThread(packet, nullptr); });
+		log_i("UmpPipeline::Start OK");
+		return true;
+	}
+	catch (const std::exception& ex)
+	{
+		log_e(ex.what());
+	}
+	return false;
+}
+
+bool UmpPipeline::StartImageSource(IImageSource* image_source, void* side_packet)
+{
+	Stop();
+	try
+	{
+		log_i("UmpPipeline::Start");
+		_frame_id = 0;
+		_frame_ts = 0;
+		_run_flag = true;
+		SidePacket packet = side_packet != nullptr ?  *((SidePacket*)side_packet) : SidePacket();
+		_worker = std::make_unique<std::thread>([this, packet, image_source]() { this->WorkerThread(packet, image_source); });
 		log_i("UmpPipeline::Start OK");
 		return true;
 	}
@@ -124,13 +172,13 @@ IPacketAPI* UmpPipeline::GetPacketAPI()
 	return _packet_api.get();
 }
 
-void UmpPipeline::WorkerThread(SidePacket side_packet)
+void UmpPipeline::WorkerThread(SidePacket side_packet, IImageSource* image_source)
 {
 	log_i("Enter WorkerThread");
 	// RUN
 	try
 	{
-		auto status = this->RunImpl(side_packet);
+		auto status = image_source != nullptr ? this->RunImageImpl(side_packet, image_source) : this->RunCaptureImpl(side_packet); 
 		if (!status.ok())
 		{
 			std::string msg(status.message());
@@ -168,12 +216,106 @@ void UmpPipeline::ShutdownImpl()
 	log_i("UmpPipeline::Shutdown OK");
 }
 
-inline double get_timestamp_us() // microseconds
+absl::Status UmpPipeline::RunImageImpl(UmpPipeline::SidePacket side_packet, IImageSource* image_source)
 {
-	return (double)cv::getTickCount() / (double)cv::getTickFrequency() * 1e6;
+	if(_run_flag)
+	{
+		return absl::OkStatus();
+	}
+	constexpr char kInputStream[] = "input_video";
+	constexpr char kOutputStream[] = "output_video";
+	constexpr char kWindowName[] = "MediaPipe";
+
+	log_i("UmpPipeline::Run");
+
+	// init mediapipe
+
+	std::string config_str;
+	RET_CHECK_OK(LoadGraphConfig(_config_filename, config_str));
+
+	log_i("Parse Graph Proto");
+	mediapipe::CalculatorGraphConfig config;
+	RET_CHECK(mediapipe::ParseTextProto<mediapipe::CalculatorGraphConfig>(config_str, &config));
+
+	log_i("CalculatorGraph::Initialize");
+	_graph.reset(new mediapipe::CalculatorGraph());
+	RET_CHECK_OK(_graph->Initialize(config));
+
+	for (auto& iter : _observers)
+	{
+		RET_CHECK_OK(iter->ObserveOutput(_graph.get()));
+	}
+
+	
+	// init opencv
+
+	log_i("VideoCapture::open");
+	cv::VideoCapture capture;
+	_use_camera = _input_filename.empty();
+
+
+	RET_CHECK_OK(_graph->StartRun(side_packet));
+
+	std::string str = "CalculatorGraph::StartRun\n";
+	if (side_packet.size() > 0)
+	{
+		for (auto& value : side_packet) {
+			str += strf("%s : %s\n", value.first.c_str(), value.second.DebugString().c_str());
+		}
+	}
+	log_i(str);
+
+	double t0 = get_timestamp_us();
+
+	log_i("------------> Start Loop Work Thread <------------");
+	bool firstLoop = true;
+	int maxEmptyCount = 60;
+	while (_run_flag)
+	{
+		double t1 = get_timestamp_us();
+		double dt = t1 - t0;
+		t0 = t1;
+
+		PROF_NAMED("pipeline_tick");
+
+		auto* image = image_source->GetTexture();
+		if(image == nullptr)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(33));
+			continue;;
+		}
+		else
+		{
+			AddImageFrameIntoStream(
+				kInputStream,
+				image->GetFormat(),
+				image->GetWidth(),
+				image->GetHeight(),
+				image->GetWidthStep(),
+				(uint8*)image->GetData());
+		}
+		
+		_frame_id++;
+		if (firstLoop)
+		{
+			firstLoop = false;
+		}
+	}
+	_frame_id = 0;
+	firstLoop = true;
+	absl::Status status;
+	_run_flag = false;
+	status = _graph->CloseInputStream(kInputStream);
+	log_i(strf("CalculatorGraph::CloseInputStream: %d", status.raw_code()));
+	status = _graph->CloseAllPacketSources();
+	log_i(strf("CalculatorGraph::CloseAllPacketSources: %d", status.raw_code()));
+	status = _graph->WaitUntilDone();
+	log_i(strf("CalculatorGraph::WaitUntilDone: %d", status.raw_code()));
+	return absl::OkStatus();
 }
 
-absl::Status UmpPipeline::RunImpl(SidePacket side_packet)
+
+absl::Status UmpPipeline::RunCaptureImpl(SidePacket side_packet)
 {
 	constexpr char kInputStream[] = "input_video";
 	constexpr char kOutputStream[] = "output_video";
@@ -391,11 +533,16 @@ absl::Status UmpPipeline::RunImpl(SidePacket side_packet)
 			firstLoop = false;
 		}
 	}
-
-	log_i("CalculatorGraph::CloseInputStream");
-	_graph->CloseInputStream(kInputStream);
-	_graph->WaitUntilDone();
+	_frame_id = 0;
+	firstLoop = true;
+	absl::Status status;
 	_run_flag = false;
+	status = _graph->CloseInputStream(kInputStream);
+	log_i(strf("CalculatorGraph::CloseInputStream: %d", status.raw_code()));
+	status = _graph->CloseAllPacketSources();
+	log_i(strf("CalculatorGraph::CloseAllPacketSources: %d", status.raw_code()));
+	status = _graph->WaitUntilDone();
+	log_i(strf("CalculatorGraph::WaitUntilDone: %d", status.raw_code()));
 	return absl::OkStatus();
 }
 
