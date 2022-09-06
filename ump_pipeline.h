@@ -15,7 +15,7 @@ protected:
 public:
 	UmpPipeline();
 
-	int AddImageFrameIntoStream(const char* stream_name, MediaPipeImageFormat format, int width, int height, int width_step,  uint8* pixel_data);
+	absl::Status AddImageFrameIntoStream(const char* stream_name, MediaPipeImageFormat format, int width, int height, int width_step,  uint8* pixel_data) const;
 	virtual void SetGraphConfiguration(const char* filename) override;
 	virtual void SetCaptureFromFile(const char* filename) override;
 	virtual void SetCaptureFromCamera(int cam_id, int cam_api, int cam_resx, int cam_resy, int cam_fps) override;
@@ -28,6 +28,7 @@ public:
 	virtual bool StartImageSource(IImageSource* image_source, void* side_packet) override;
 	virtual void Stop() override;
 	virtual IPacketAPI* GetPacketAPI() override;
+	virtual void ClearObservers() override;
 
 	virtual void LogProfilerStats() override;
 	virtual uint64_t GetLastFrameId() override { return _frame_id; }
@@ -35,7 +36,7 @@ public:
 
 private:
 	void WorkerThread(SidePacket side_packet, IImageSource* image_source);
-	void ShutdownImpl();
+	absl::Status ShutdownImpl();
 	absl::Status RunImageImpl(SidePacket side_packet, IImageSource* image_source);
 	absl::Status RunCaptureImpl(SidePacket side_packet);
 	absl::Status LoadGraphConfig(const std::string& filename, std::string& out_str);
@@ -58,16 +59,16 @@ private:
 	bool _frame_callback_enabled = true;
 
 	using ObserverPtr = std::unique_ptr<class UmpObserver, IUmpObject::Dtor>;
-	std::list<ObserverPtr> _observers;
+	std::list<ObserverPtr> _observers{};
 
-	std::list<class UmpFrame*> _frame_pool;
+	std::list<class UmpFrame*> _frame_pool{};
 	class IUmpFrameCallback* _frame_callback = nullptr;
 	std::mutex _frame_mux;
 
 	std::shared_ptr<mediapipe::CalculatorGraph> _graph;
 	std::shared_ptr<IPacketAPI> _packet_api;
 
-	std::unique_ptr<std::thread> _worker;
+	std::unique_ptr<std::thread> _worker{};
 	std::atomic<bool> _run_flag;
 
 	uint64_t _frame_id = 0;

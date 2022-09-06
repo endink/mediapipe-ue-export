@@ -45,8 +45,8 @@
   }            \
 return -1;
 
-#define CATCH_RETURN(RET)                            \
-return RET;            \
+#define CATCH_RETURN(RET_VALUE, FAILED)                            \
+return RET_VALUE;            \
 }            \
 catch (std::exception & e) {            \
 log(EUmpVerbosity::Error,  e.what());            \
@@ -54,7 +54,16 @@ log(EUmpVerbosity::Error,  e.what());            \
 catch (...) {            \
 log(EUmpVerbosity::Error, "Unknown exception occured");            \
 }            \
-return -1; 
+return FAILED;
+
+#define CATCH_RETURN_STATUS                        \
+}            \
+catch (std::exception & e) {            \
+	return absl::Status(absl::StatusCode::kAborted, e.what()); \
+}            \
+catch (...) {            \
+	return absl::Status(absl::StatusCode::kAborted,"Unknown exception occured"); \
+}            
 
 
 #define CATCH_ONLY                            \

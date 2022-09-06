@@ -5,7 +5,6 @@
 #include "mediapipe/framework/formats/image_frame.h"
 #include "mediapipe/framework/formats/image_frame_opencv.h"
 
-#include "mediapipe/framework/port/opencv_imgproc_inc.h"
 #include "mediapipe/framework/port/opencv_video_inc.h"
 #include "mediapipe/framework/port/opencv_highgui_inc.h"
 
@@ -29,32 +28,31 @@ UmpPipeline::UmpPipeline()
 	_packet_api.reset(new PacketAPI());
 }
 
-int UmpPipeline::AddImageFrameIntoStream(const char* stream_name, MediaPipeImageFormat format, int width, int height, int width_step,  uint8* pixel_data)
+absl::Status UmpPipeline::AddImageFrameIntoStream(const char* stream_name, MediaPipeImageFormat format, int width, int height, int width_step,  uint8* pixel_data) const
 {
 	TRY
-	auto* image_frame_out = new mediapipe::ImageFrame
-	{
+	auto* image_frame_out = new mediapipe::ImageFrame(
 		static_cast<mediapipe::ImageFormat::Format>(static_cast<int>(format)),
 		width,
 		height,
 		width_step,
 		pixel_data,
 		[](uint8*){}
-	};
+	);
 
 	mediapipe::Timestamp ts(static_cast<int64>(get_timestamp_us()));
-	auto* packet_in = new mediapipe::Packet{mediapipe::MakePacket<mediapipe::ImageFrame>(std::move(*image_frame_out)).At(ts)};
-	auto status = _graph->AddPacketToInputStream(stream_name, std::move(*packet_in));
+	const auto packet_in = mediapipe::MakePacket<mediapipe::ImageFrame>(std::move(*image_frame_out)).At(ts);
+	auto status = _graph->AddPacketToInputStream(stream_name, packet_in);
 	delete image_frame_out;
-	delete packet_in;
-	int result = status.ok() ? 0 : status.raw_code();
-	CATCH_RETURN(result);
+	return status;
+	CATCH_RETURN_STATUS
 }
 
 UmpPipeline::~UmpPipeline()
 {
 	log_d("~UmpPipeline");
-	Stop();
+	UmpPipeline::Stop();
+	UmpPipeline::ClearObservers();
 }
 
 void UmpPipeline::SetGraphConfiguration(const char* filename)
@@ -115,7 +113,7 @@ bool UmpPipeline::Start(void* side_packet)
 		_frame_id = 0;
 		_frame_ts = 0;
 		_run_flag = true;
-		SidePacket packet = side_packet != nullptr ?  *((SidePacket*)side_packet) : SidePacket();
+		SidePacket packet = side_packet != nullptr ?  *static_cast<SidePacket*>(side_packet) : SidePacket();
 		_worker = std::make_unique<std::thread>([this, packet]() { this->WorkerThread(packet, nullptr); });
 		log_i("UmpPipeline::Start OK");
 		return true;
@@ -136,7 +134,7 @@ bool UmpPipeline::StartImageSource(IImageSource* image_source, void* side_packet
 		_frame_id = 0;
 		_frame_ts = 0;
 		_run_flag = true;
-		SidePacket packet = side_packet != nullptr ?  *((SidePacket*)side_packet) : SidePacket();
+		SidePacket packet = side_packet != nullptr ?  *static_cast<SidePacket*>(side_packet) : SidePacket();
 		_worker = std::make_unique<std::thread>([this, packet, image_source]() { this->WorkerThread(packet, image_source); });
 		log_i("UmpPipeline::Start OK");
 		return true;
@@ -172,59 +170,55 @@ IPacketAPI* UmpPipeline::GetPacketAPI()
 	return _packet_api.get();
 }
 
+void UmpPipeline::ClearObservers()
+{
+	_observers.clear();
+}
+
 void UmpPipeline::WorkerThread(SidePacket side_packet, IImageSource* image_source)
 {
 	log_i("Enter WorkerThread");
 	// RUN
-	try
-	{
+	TRY
 		auto status = image_source != nullptr ? this->RunImageImpl(side_packet, image_source) : this->RunCaptureImpl(side_packet); 
 		if (!status.ok())
 		{
 			std::string msg(status.message());
 			log_e(msg);
 		}
-	}
-	catch (const std::exception& ex)
-	{
-		log_e(ex.what());
-	}
+	CATCH_ONLY
 	// SHUTDOWN
-	try
-	{
+	
+	TRY
 		ShutdownImpl();
-	}
-	catch (const std::exception& ex)
-	{
-		log_e(ex.what());
-	}
+	CATCH_ONLY
 	log_i("Leave WorkerThread");
 }
 
-void UmpPipeline::ShutdownImpl()
+absl::Status UmpPipeline::ShutdownImpl()
 {
-	log_i("UmpPipeline::Shutdown");
-
+	_frame_id = 0;
+	absl::Status status;
+	_run_flag = false;
+	log_i(strf("CalculatorGraph::CloseInputStream: %d", status.raw_code()));
+	status = _graph->CloseAllPacketSources();
+	log_i(strf("CalculatorGraph::CloseAllPacketSources: %d", status.raw_code()));
+	status = _graph->WaitUntilDone();
+	log_i(strf("CalculatorGraph::WaitUntilDone: %d", status.raw_code()));
 	_graph.reset();
-	_observers.clear();
-
 	if (_show_video_winow)
+	{
 		cv::destroyAllWindows();
-
+	}
 	ReleaseFramePool();
-
 	log_i("UmpPipeline::Shutdown OK");
+	
+	return absl::OkStatus();
 }
 
-absl::Status UmpPipeline::RunImageImpl(UmpPipeline::SidePacket side_packet, IImageSource* image_source)
+absl::Status UmpPipeline::RunImageImpl(SidePacket side_packet, IImageSource* image_source)
 {
-	if(_run_flag)
-	{
-		return absl::OkStatus();
-	}
 	constexpr char kInputStream[] = "input_video";
-	constexpr char kOutputStream[] = "output_video";
-	constexpr char kWindowName[] = "MediaPipe";
 
 	log_i("UmpPipeline::Run");
 
@@ -246,15 +240,6 @@ absl::Status UmpPipeline::RunImageImpl(UmpPipeline::SidePacket side_packet, IIma
 		RET_CHECK_OK(iter->ObserveOutput(_graph.get()));
 	}
 
-	
-	// init opencv
-
-	log_i("VideoCapture::open");
-	cv::VideoCapture capture;
-	_use_camera = _input_filename.empty();
-
-
-	RET_CHECK_OK(_graph->StartRun(side_packet));
 
 	std::string str = "CalculatorGraph::StartRun\n";
 	if (side_packet.size() > 0)
@@ -263,13 +248,18 @@ absl::Status UmpPipeline::RunImageImpl(UmpPipeline::SidePacket side_packet, IIma
 			str += strf("%s : %s\n", value.first.c_str(), value.second.DebugString().c_str());
 		}
 	}
+	else
+	{
+		str += "Empty size package used. ";
+	}
 	log_i(str);
+
+	RET_CHECK_OK(_graph->StartRun(side_packet));
 
 	double t0 = get_timestamp_us();
 
 	log_i("------------> Start Loop Work Thread <------------");
-	bool firstLoop = true;
-	int maxEmptyCount = 60;
+	bool first_loop = true;
 	while (_run_flag)
 	{
 		double t1 = get_timestamp_us();
@@ -282,35 +272,36 @@ absl::Status UmpPipeline::RunImageImpl(UmpPipeline::SidePacket side_packet, IIma
 		if(image == nullptr)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(33));
-			continue;;
+			continue;
 		}
-		else
+		auto status = AddImageFrameIntoStream(
+			kInputStream,
+			image->GetFormat(),
+			image->GetWidth(),
+			image->GetHeight(),
+			image->GetWidthStep(),
+			static_cast<uint8*>(image->GetData()));
+
+		image->Release();
+		if(first_loop && !status.ok())
 		{
-			AddImageFrameIntoStream(
-				kInputStream,
-				image->GetFormat(),
-				image->GetWidth(),
-				image->GetHeight(),
-				image->GetWidthStep(),
-				(uint8*)image->GetData());
+			log_e(strf("AddImageFrameIntoStream failed: %s", status.message()));
 		}
-		
+		if(!status.ok())
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(33));
+			continue;
+		}
+		if(first_loop)
+		{
+			log_i("UmpPipeline::AddImageFrameIntoStream (in loop) OK.");
+		}
 		_frame_id++;
-		if (firstLoop)
+		if (first_loop)
 		{
-			firstLoop = false;
+			first_loop = false;
 		}
 	}
-	_frame_id = 0;
-	firstLoop = true;
-	absl::Status status;
-	_run_flag = false;
-	status = _graph->CloseInputStream(kInputStream);
-	log_i(strf("CalculatorGraph::CloseInputStream: %d", status.raw_code()));
-	status = _graph->CloseAllPacketSources();
-	log_i(strf("CalculatorGraph::CloseAllPacketSources: %d", status.raw_code()));
-	status = _graph->WaitUntilDone();
-	log_i(strf("CalculatorGraph::WaitUntilDone: %d", status.raw_code()));
 	return absl::OkStatus();
 }
 
@@ -389,7 +380,7 @@ absl::Status UmpPipeline::RunCaptureImpl(SidePacket side_packet)
 
 	const int cap_resx = (int)capture.get(cv::CAP_PROP_FRAME_WIDTH);
 	const int cap_resy = (int)capture.get(cv::CAP_PROP_FRAME_HEIGHT);
-	const double cap_fps = (double)capture.get(cv::CAP_PROP_FPS);
+	const double cap_fps =capture.get(cv::CAP_PROP_FPS);
 	log_i(strf("capture: w=%d h=%d fps=%f, overlay: %s", cap_resx, cap_resy, cap_fps, _show_video_winow ? "true" : "false"));
 	if (_show_video_winow)
 	{
@@ -445,7 +436,6 @@ absl::Status UmpPipeline::RunCaptureImpl(SidePacket side_packet)
 				break;
 			}
 		}
-
 		const double frame_timestamp_us = get_timestamp_us();
 		_frame_ts = frame_timestamp_us;
 
@@ -617,8 +607,6 @@ absl::Status UmpPipeline::LoadGraphConfig(const std::string& filename, std::stri
 
 absl::Status UmpPipeline::LoadResourceFile(const std::string& filename, std::string& out_str)
 {
-	log_i(strf("LoadResourceFile: %s", filename.c_str()));
-
 	out_str.clear();
 
 	std::string path;

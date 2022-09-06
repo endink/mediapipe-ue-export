@@ -36,6 +36,7 @@ public:
 class IMediaPipeTexture
 {
 public:
+	virtual ~IMediaPipeTexture() = default;
 	virtual long GetImageId() const = 0;
 	//get uint8*
 	virtual void* GetData() const = 0;
@@ -43,12 +44,13 @@ public:
 	virtual int GetWidthStep() const = 0;
 	virtual int GetWidth() const = 0;
 	virtual int GetHeight() const = 0;
-	virtual void Release() const = 0;
+	virtual void Release() = 0;
 };
 
 class IImageSource
 {
 public:
+	virtual ~IImageSource() = default;
 	virtual  IMediaPipeTexture* GetTexture() = 0;
 };
 
@@ -99,6 +101,7 @@ public:
 	virtual bool StartImageSource(IImageSource* image_source, void* side_packet = nullptr) =0;
 	virtual void Stop() = 0;
 	virtual IPacketAPI* GetPacketAPI() = 0;
+	virtual void ClearObservers() = 0;
 
 	// debug
 	virtual void LogProfilerStats() = 0;
