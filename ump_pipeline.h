@@ -15,7 +15,7 @@ protected:
 public:
 	UmpPipeline();
 
-	absl::Status AddImageFrameIntoStream(const char* stream_name, MediaPipeImageFormat format, int width, int height, int width_step,  uint8* pixel_data) const;
+	absl::Status AddImageFrameIntoStream(const char* stream_name, IMediaPipeTexture* texture) const;
 	virtual void SetGraphConfiguration(const char* filename) override;
 	virtual void SetCaptureFromFile(const char* filename) override;
 	virtual void SetCaptureFromCamera(int cam_id, int cam_api, int cam_resx, int cam_resy, int cam_fps) override;
@@ -37,8 +37,8 @@ public:
 private:
 	void WorkerThread(SidePacket side_packet, IImageSource* image_source);
 	absl::Status ShutdownImpl();
-	absl::Status RunImageImpl(SidePacket side_packet, IImageSource* image_source);
-	absl::Status RunCaptureImpl(SidePacket side_packet);
+	absl::Status RunImageImpl(SidePacket& side_packet, IImageSource* image_source);
+	absl::Status RunCaptureImpl(SidePacket& side_packet);
 	absl::Status LoadGraphConfig(const std::string& filename, std::string& out_str);
 	absl::Status LoadResourceFile(const std::string& filename, std::string& out_str);
 	class UmpFrame* AllocFrame();

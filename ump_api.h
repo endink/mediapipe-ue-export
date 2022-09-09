@@ -52,6 +52,7 @@ class IImageSource
 public:
 	virtual ~IImageSource() = default;
 	virtual  IMediaPipeTexture* GetTexture() = 0;
+	virtual bool IsStatic() const = 0;
 };
 
 class IUmpObject

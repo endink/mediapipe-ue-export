@@ -95,7 +95,7 @@ int PacketAPI::SidePacketAddFloat(void* side_packet, const char* key, float valu
 int PacketAPI::SidePacketAddBoolean(void* side_packet, const char* key, bool value)
 {
 	TRY
-		SidePacket* sp = (SidePacket*)side_packet;
+		SidePacket* sp = static_cast<SidePacket*>(side_packet);
 		mediapipe::Packet* p = mp__MakeBoolPacket__b(value);
 		if (p != nullptr)
 		{

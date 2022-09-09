@@ -28,16 +28,19 @@ UmpPipeline::UmpPipeline()
 	_packet_api.reset(new PacketAPI());
 }
 
-absl::Status UmpPipeline::AddImageFrameIntoStream(const char* stream_name, MediaPipeImageFormat format, int width, int height, int width_step,  uint8* pixel_data) const
+absl::Status UmpPipeline::AddImageFrameIntoStream(const char* stream_name, IMediaPipeTexture* texture) const
 {
 	TRY
 	auto* image_frame_out = new mediapipe::ImageFrame(
-		static_cast<mediapipe::ImageFormat::Format>(static_cast<int>(format)),
-		width,
-		height,
-		width_step,
-		pixel_data,
-		[](uint8*){}
+		static_cast<mediapipe::ImageFormat::Format>(static_cast<int>(texture->GetFormat())),
+		texture->GetWidth(),
+		texture->GetHeight(),
+		texture->GetWidthStep(),
+		static_cast<uint8*>(texture->GetData()),
+		[texture](uint8*)
+		{
+			texture->Release();
+		}
 	);
 
 	mediapipe::Timestamp ts(static_cast<int64>(get_timestamp_us()));
@@ -114,6 +117,10 @@ bool UmpPipeline::Start(void* side_packet)
 		_frame_ts = 0;
 		_run_flag = true;
 		SidePacket packet = side_packet != nullptr ?  *static_cast<SidePacket*>(side_packet) : SidePacket();
+		if(side_packet == nullptr)
+		{
+			log_w("StartImageSource use null packet");
+		}
 		_worker = std::make_unique<std::thread>([this, packet]() { this->WorkerThread(packet, nullptr); });
 		log_i("UmpPipeline::Start OK");
 		return true;
@@ -135,6 +142,10 @@ bool UmpPipeline::StartImageSource(IImageSource* image_source, void* side_packet
 		_frame_ts = 0;
 		_run_flag = true;
 		SidePacket packet = side_packet != nullptr ?  *static_cast<SidePacket*>(side_packet) : SidePacket();
+		if(side_packet == nullptr)
+		{
+			log_w("StartImageSource use null packet");
+		}
 		_worker = std::make_unique<std::thread>([this, packet, image_source]() { this->WorkerThread(packet, image_source); });
 		log_i("UmpPipeline::Start OK");
 		return true;
@@ -156,6 +167,7 @@ void UmpPipeline::Stop()
 			log_i("UmpPipeline::Stop");
 			_worker->join();
 			_worker.reset();
+			_frame_id = 0;
 			log_i("UmpPipeline::Stop OK");
 		}
 	}
@@ -216,7 +228,7 @@ absl::Status UmpPipeline::ShutdownImpl()
 	return absl::OkStatus();
 }
 
-absl::Status UmpPipeline::RunImageImpl(SidePacket side_packet, IImageSource* image_source)
+absl::Status UmpPipeline::RunImageImpl(SidePacket& side_packet, IImageSource* image_source)
 {
 	constexpr char kInputStream[] = "input_video";
 
@@ -254,42 +266,37 @@ absl::Status UmpPipeline::RunImageImpl(SidePacket side_packet, IImageSource* ima
 	}
 	log_i(str);
 
+	if(image_source->IsStatic())
+	{
+		std::string key("static_image_mode");
+		side_packet[key] = mediapipe::MakePacket<bool>(true);
+		log_i("Static mode used.");
+	}
 	RET_CHECK_OK(_graph->StartRun(side_packet));
 
 	double t0 = get_timestamp_us();
 
 	log_i("------------> Start Loop Work Thread <------------");
 	bool first_loop = true;
+	bool is_static = image_source->IsStatic();
+	auto mills = !is_static ? 33 : 1000;
 	while (_run_flag)
 	{
-		double t1 = get_timestamp_us();
-		double dt = t1 - t0;
-		t0 = t1;
-
-		PROF_NAMED("pipeline_tick");
-
 		auto* image = image_source->GetTexture();
 		if(image == nullptr)
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(33));
+			std::this_thread::sleep_for(std::chrono::milliseconds(mills));
 			continue;
 		}
-		auto status = AddImageFrameIntoStream(
-			kInputStream,
-			image->GetFormat(),
-			image->GetWidth(),
-			image->GetHeight(),
-			image->GetWidthStep(),
-			static_cast<uint8*>(image->GetData()));
-
-		image->Release();
+		auto status = AddImageFrameIntoStream(kInputStream, image);
 		if(first_loop && !status.ok())
 		{
 			log_e(strf("AddImageFrameIntoStream failed: %s", status.message()));
 		}
 		if(!status.ok())
 		{
-			std::this_thread::sleep_for(std::chrono::milliseconds(33));
+			image->Release();
+			std::this_thread::sleep_for(std::chrono::milliseconds(mills));
 			continue;
 		}
 		if(first_loop)
@@ -301,12 +308,16 @@ absl::Status UmpPipeline::RunImageImpl(SidePacket side_packet, IImageSource* ima
 		{
 			first_loop = false;
 		}
+		if(is_static)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(mills));
+		}
 	}
 	return absl::OkStatus();
 }
 
 
-absl::Status UmpPipeline::RunCaptureImpl(SidePacket side_packet)
+absl::Status UmpPipeline::RunCaptureImpl(SidePacket& side_packet)
 {
 	constexpr char kInputStream[] = "input_video";
 	constexpr char kOutputStream[] = "output_video";
