@@ -51,6 +51,14 @@ int PacketAPI::GetClassificationListVector(void* packet, SerializedProtoArray* v
 	return mp_Packet__GetClassificationListVector(packet, value_out);
 }
 
+void PacketAPI::ClearProtoArray(SerializedProtoArray* proto_array)
+{
+	if(proto_array != nullptr)
+	{
+		DeleteSerializedProtoArray(proto_array->data, proto_array->size);
+	};
+}
+
 void* PacketAPI::NewSidePacket()
 {
 	return new SidePacket();

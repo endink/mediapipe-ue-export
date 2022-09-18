@@ -18,13 +18,6 @@
 #include "ump_shared.h"
 #include "protobuf.h"
 
-template <typename T>
-class UnsafePacketHolder : public mediapipe::packet_internal::Holder<T> {
-    using mediapipe::packet_internal::Holder<T>::ptr_;
-
-public:
-    const T* Get() const { return ptr_; }
-};
 
 
 template <typename T>
@@ -41,36 +34,7 @@ inline int mp_Packet__Consume(mediapipe::Packet* packet, absl::StatusOr<T>** sta
     CATCH_EXCEPTION
 }
 
-template <typename T>
-inline int mp_Packet__Get(mediapipe::Packet* packet, const T** value_out) {
-    TRY_ALL
-        auto holder = packet->IsEmpty() ? nullptr : mediapipe::packet_internal::GetHolder(*packet)->As<T>();
-    auto unsafe_holder = static_cast<const UnsafePacketHolder<T>*>(holder);
 
-    if (unsafe_holder == nullptr) {
-        absl::Status status = packet->ValidateAsType<T>();
-        LOG(FATAL) << "mp_Packet__Get() failed: " << status.message();
-    }
-    *value_out = unsafe_holder->Get();
-    RETURN_CODE(MpReturnCode::Success);
-    CATCH_ALL
-}
-
-template <typename T>
-inline int mp_Packet__GetStructVector(mediapipe::Packet* packet, StructArray<T>* value_out) {
-    TRY_ALL
-        auto vec = packet->Get<std::vector<T>>();
-    auto size = vec.size();
-    auto data = new T[size];
-
-    for (auto i = 0; i < size; ++i) {
-        data[i] = vec[i];
-    }
-    value_out->data = data;
-    value_out->size = static_cast<int>(size);
-    RETURN_CODE(MpReturnCode::Success);
-    CATCH_ALL
-}
 
 template <typename T>
 inline int mp_Packet__GetSerializedProto(mediapipe::Packet* packet, SerializedProto* value_out) {

@@ -2,7 +2,7 @@
 
 @echo off
 
-set "UNREAL_PLUGIN_DIR=D:\3D_Works\UE\MediaPipeDemo\Plugins\MediaPipe4U"
+set "UNREAL_PLUGIN_DIR=D:\3D_Works\UE\MetaHumanLighting\Plugins\MediaPipe4U"
 set "INITIAL_DIR=%cd%"
 
 set "SCRIPTS_DIR=%~dp0"

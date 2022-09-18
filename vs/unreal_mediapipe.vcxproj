@@ -45,7 +45,6 @@
     <ClCompile Include="..\landmarks_packet.cc" />
     <ClCompile Include="..\packet.cc" />
     <ClCompile Include="..\packet_api.cc" />
-    <ClCompile Include="..\protobuf.cc" />
     <ClCompile Include="..\ump_app.cc" />
     <ClCompile Include="..\ump_context.cc" />
     <ClCompile Include="..\ump_dll.cc" />

@@ -54,6 +54,13 @@ inline bool ConvertFromTextFormat(const char* str, SerializedProto* output) {
     return result;
 }
 
-void mp_api_SerializedProtoArray__delete(SerializedProto* serialized_proto_vector_data, int size);
+inline void DeleteSerializedProtoArray(SerializedProto* serialized_proto_vector_data, int size) {
+    auto serialized_proto = serialized_proto_vector_data;
+    for (auto i = 0; i < size; ++i) {
+        delete (serialized_proto++)->str;
+    }
+    delete[] serialized_proto_vector_data;
+}
+
 
 #endif
