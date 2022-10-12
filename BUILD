@@ -62,7 +62,7 @@ cc_binary(
 	name = "mediapipe_api",
 	srcs = ["ump_dll.cc"],
 	defines = ["MP_EXPORTS"],
-	linkshared = 1,
+	linkshared = True,
 	deps = [
 		":ump_core",
 	],

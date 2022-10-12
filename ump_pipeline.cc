@@ -4,6 +4,8 @@
 
 #include "mediapipe/framework/formats/image_frame.h"
 #include "mediapipe/framework/formats/image_frame_opencv.h"
+#include "mediapipe/framework/port/opencv_video_inc.h"
+#include "mediapipe/framework/port/opencv_highgui_inc.h"
 
 #include "mediapipe/framework/output_stream_poller.h"
 
@@ -28,7 +30,8 @@ UmpPipeline::UmpPipeline()
 absl::Status UmpPipeline::AddImageFrameIntoStream(const char* stream_name, IMediaPipeTexture* texture) const
 {
 	TRY
-	auto* image_frame_out = new mediapipe::ImageFrame(
+
+	 auto image_frame_out = absl::make_unique<mediapipe::ImageFrame>(
 		static_cast<mediapipe::ImageFormat::Format>(static_cast<int>(texture->GetFormat())),
 		texture->GetWidth(),
 		texture->GetHeight(),
@@ -39,11 +42,9 @@ absl::Status UmpPipeline::AddImageFrameIntoStream(const char* stream_name, IMedi
 			texture->Release();
 		}
 	);
-
+	
 	mediapipe::Timestamp ts(static_cast<int64>(get_timestamp_us()));
-	const auto packet_in = mediapipe::MakePacket<mediapipe::ImageFrame>(std::move(*image_frame_out)).At(ts);
-	auto status = _graph->AddPacketToInputStream(stream_name, packet_in);
-	delete image_frame_out;
+	auto status = _graph->AddPacketToInputStream(stream_name, mediapipe::Adopt(image_frame_out.release()).At(ts));
 	return status;
 	CATCH_RETURN_STATUS
 }
@@ -288,7 +289,7 @@ absl::Status UmpPipeline::RunImageImpl(SidePacket& side_packet, IImageSource* im
 		auto status = AddImageFrameIntoStream(kInputStream, image);
 		if(first_loop && !status.ok())
 		{
-			log_e(strf("AddImageFrameIntoStream failed: %s", status.message()));
+			log_e(strf("AddImageFrameIntoStream failed: %.*s", static_cast<int>(status.message().size()), status.message().data()));
 		}
 		if(!status.ok())
 		{

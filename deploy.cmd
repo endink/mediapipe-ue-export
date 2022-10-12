@@ -47,6 +47,7 @@ md "%DEPLOY_ROOT%\mediapipe\modules\face_geometry\data"
 
 copy /Y "%MP_ROOT%\mediapipe\modules\face_detection\face_detection_short_range.tflite" "%DEPLOY_ROOT%\mediapipe\modules\face_detection\"
 copy /Y "%MP_ROOT%\mediapipe\modules\face_landmark\face_landmark.tflite" "%DEPLOY_ROOT%\mediapipe\modules\face_landmark\"
+copy /Y "%MP_ROOT%\mediapipe\modules\face_landmark\face_landmark_with_attention.tflite" "%DEPLOY_ROOT%\mediapipe\modules\face_landmark\"
 copy /Y "%MP_ROOT%\bazel-bin\mediapipe\modules\face_geometry\data\geometry_pipeline_metadata_landmarks.binarypb" "%DEPLOY_ROOT%\mediapipe\modules\face_geometry\data\"
 
 :: iris
