@@ -49,7 +49,7 @@ public:
 					auto s = _callback->OnUmpPacket(this, const_cast<void*>(p));
 					if (!s)
 					{
-						return absl::AbortedError(strf("OnUmpPacket fault (stream = %s).", _stream_name.c_str()));
+						return absl::AbortedError(strf("IUmpObserver::OnUmpPacket return false (out stream : %s), pipeline will be stopped.", _stream_name.c_str()));
 					}
 				}
 			}

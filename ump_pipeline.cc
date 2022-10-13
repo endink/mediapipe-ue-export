@@ -99,6 +99,11 @@ IUmpObserver* UmpPipeline::CreateObserver(const char* stream_name)
 	return observer;
 }
 
+void UmpPipeline::SetListener(IUmpPipelineListener* listener)
+{
+	_listener = listener;
+}
+
 void UmpPipeline::SetFrameCallback(class IUmpFrameCallback* callback)
 {
 	log_i(strf("SetFrameCallback: %p", callback));
@@ -187,14 +192,23 @@ void UmpPipeline::ClearObservers()
 
 void UmpPipeline::WorkerThread(SidePacket side_packet, IImageSource* image_source)
 {
+	_image_size_known = false;
 	log_i("Enter WorkerThread");
 	// RUN
+	if(_listener)
+	{
+		_listener->OnEnterPipelineWorkThread();
+	}
 	TRY
 		auto status = image_source != nullptr ? this->RunImageImpl(side_packet, image_source) : this->RunCaptureImpl(side_packet); 
 		if (!status.ok())
 		{
 			std::string msg(status.message());
 			log_e(msg);
+			if(_listener)
+			{
+				_listener->OnPipelineWorkThreadFault();
+			}
 		}
 	CATCH_ONLY
 	// SHUTDOWN
@@ -203,6 +217,10 @@ void UmpPipeline::WorkerThread(SidePacket side_packet, IImageSource* image_sourc
 		ShutdownImpl();
 	CATCH_ONLY
 	log_i("Leave WorkerThread");
+	if(_listener)
+	{
+		_listener->OnExitPipelineWorkThread();;
+	}
 }
 
 absl::Status UmpPipeline::ShutdownImpl()
@@ -285,6 +303,11 @@ absl::Status UmpPipeline::RunImageImpl(SidePacket& side_packet, IImageSource* im
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(mills));
 			continue;
+		}
+		if(_listener && !_image_size_known)
+		{
+			_listener->OnImageSizeReceived(image->GetWidth(),image->GetHeight());
+			_image_size_known = true;
 		}
 		auto status = AddImageFrameIntoStream(kInputStream, image);
 		if(first_loop && !status.ok())
@@ -462,11 +485,19 @@ absl::Status UmpPipeline::RunCaptureImpl(SidePacket& side_packet)
 			// TODO: zero copy
 			cv::Mat input_mif_view = mediapipe::formats::MatView(input_mif.get());
 			cvmat_rgb.copyTo(input_mif_view);
-
+			
+			
 			RET_CHECK_OK(_graph->AddPacketToInputStream(
 				kInputStream,
 				mediapipe::Adopt(input_mif.release())
 				.At(mediapipe::Timestamp((size_t)frame_timestamp_us))));
+
+			
+			if(_listener && !_image_size_known)
+			{
+				_listener->OnImageSizeReceived(cvmat_rgb.cols,cvmat_rgb.rows);
+				_image_size_known = true;
+			}
 
 			if (firstLoop)
 			{
@@ -495,7 +526,7 @@ absl::Status UmpPipeline::RunCaptureImpl(SidePacket& side_packet)
 				auto& dst_mat = frame->GetMatrixRef();
 				cv::cvtColor(output_mif_view, dst_mat, cv::COLOR_RGB2BGRA); // unreal requires BGRA8 or RGBA8
 				frame->_format = EUmpPixelFormat::B8G8R8A8;
-				_frame_callback->OnUmpFrame(static_cast<IUmpFrame*>(frame)); // unreal should call frame->Release()
+				_frame_callback->OnUmpFrame(frame); // unreal should call frame->Release()
 			}
 
 			if (_show_video_winow)

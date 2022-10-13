@@ -23,6 +23,7 @@ public:
 	inline virtual void EnableFrameCallback(bool enabled) override { _frame_callback_enabled = enabled; };
 	inline virtual bool IsFrameCallbackEnabled() override { return _frame_callback_enabled; };
 	virtual IUmpObserver* CreateObserver(const char* stream_name) override;
+	virtual void SetListener(IUmpPipelineListener* listener) override;
 	virtual void SetFrameCallback(class IUmpFrameCallback* callback) override;
 	virtual bool Start(void* side_packet) override;
 	virtual bool StartImageSource(IImageSource* image_source, void* side_packet) override;
@@ -57,12 +58,14 @@ private:
 	bool _use_camera = false;
 	bool _show_video_winow = false;
 	bool _frame_callback_enabled = true;
+	bool _image_size_known = false;
 
 	using ObserverPtr = std::unique_ptr<class UmpObserver, IUmpObject::Dtor>;
 	std::list<ObserverPtr> _observers{};
 
 	std::list<class UmpFrame*> _frame_pool{};
 	class IUmpFrameCallback* _frame_callback = nullptr;
+	class IUmpPipelineListener* _listener = nullptr;
 	std::mutex _frame_mux;
 
 	std::shared_ptr<mediapipe::CalculatorGraph> _graph;

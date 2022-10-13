@@ -98,6 +98,7 @@ public:
 	virtual bool IsFrameCallbackEnabled() = 0;
 	virtual class IUmpObserver* CreateObserver(const char* stream_name) = 0;
 	virtual void SetFrameCallback(class IUmpFrameCallback* callback) = 0;
+	virtual void SetListener(class IUmpPipelineListener* listener) = 0;
 	virtual bool Start(void* side_packet = nullptr) = 0;
 	virtual bool StartImageSource(IImageSource* image_source, void* side_packet = nullptr) =0;
 	virtual void Stop() = 0;
@@ -114,10 +115,18 @@ public:
 // Observer
 //
 
+class IUmpPipelineListener
+{
+public:
+	virtual  void OnImageSizeReceived(int width, int height) = 0;
+	virtual  void OnPipelineWorkThreadFault() = 0;
+	virtual  void OnEnterPipelineWorkThread() = 0;
+	virtual  void OnExitPipelineWorkThread() = 0;
+};
+
 class IUmpPacketCallback
 {
 public:
-	virtual void OnUmpPresence(class IUmpObserver* observer, bool present) = 0;
 	virtual bool OnUmpPacket(class IUmpObserver* observer, void* packet) = 0;
 };
 
