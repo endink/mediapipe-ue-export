@@ -22,7 +22,7 @@ public:
 	virtual void ShowVideoWindow(bool show) override;
 	inline virtual void EnableFrameCallback(bool enabled) override { _frame_callback_enabled = enabled; };
 	inline virtual bool IsFrameCallbackEnabled() override { return _frame_callback_enabled; };
-	virtual IUmpObserver* CreateObserver(const char* stream_name) override;
+	virtual IUmpObserver* CreateObserver(const char* stream_name, long timeoutMillisecond  = 2000) override;
 	virtual void SetListener(IUmpPipelineListener* listener) override;
 	virtual void SetFrameCallback(class IUmpFrameCallback* callback) override;
 	virtual bool Start(void* side_packet) override;

@@ -96,7 +96,7 @@ public:
 	virtual void ShowVideoWindow(bool show) = 0;
 	virtual void EnableFrameCallback(bool enabled) = 0;
 	virtual bool IsFrameCallbackEnabled() = 0;
-	virtual class IUmpObserver* CreateObserver(const char* stream_name) = 0;
+	virtual class IUmpObserver* CreateObserver(const char* stream_name,  long timeoutMillisecond  = 2000) = 0;
 	virtual void SetFrameCallback(class IUmpFrameCallback* callback) = 0;
 	virtual void SetListener(class IUmpPipelineListener* listener) = 0;
 	virtual bool Start(void* side_packet = nullptr) = 0;

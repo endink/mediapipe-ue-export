@@ -15,18 +15,17 @@ protected:
 	}
 
 public:
-	UmpObserver(const char* in_stream_name, const std::shared_ptr<IPacketAPI>& packet_api) : 
+	UmpObserver(const char* in_stream_name, const std::shared_ptr<IPacketAPI>& packet_api, long timeoutMillisecond) : 
 		_stream_name(in_stream_name), 
 		_packet_api{ packet_api }
 	{ 
-		log_d(strf("+UmpObserver %s", *_stream_name)); 
+		log_d(strf("+UmpObserver %s", *_stream_name));
+		_timeout = timeoutMillisecond * 1000;
 	}
 
 
 	absl::Status ObserveOutput(mediapipe::CalculatorGraph* graph)
 	{
-		std::string presence_name(_stream_name);
-		presence_name.append("_presence");
 
 		/*graph->ObserveOutputStream(*presence_name, [this](const mediapipe::Packet& pk)
 		{
@@ -40,20 +39,37 @@ public:
 
 		RET_CHECK_OK(graph->ObserveOutputStream(*_stream_name, [this](const mediapipe::Packet& pk)
 		{
-			if (_callback)
+			if(!_callback)
 			{
-				PROF_NAMED("observer_callback");
-				if (!pk.IsEmpty())
+				log_w(strf("IUmpObserver::OnUmpPacket enter but call back ptr is null. (out stream : %s)", _stream_name.c_str()));
+			}
+			if (!pk.IsEmpty())
+			{
+				auto current = pk.Timestamp().Microseconds();
+				if(_lastTimestampMicrosec <= 0)
+				{
+					_lastTimestampMicrosec = current;
+				}
+				bool hasTimedOut = (static_cast<long>(current) - _lastTimestampMicrosec) >= _timeout;
+				if(!hasTimedOut)
 				{
 					const void* p = &pk;
-					auto s = _callback->OnUmpPacket(this, const_cast<void*>(p));
-					if (!s)
+					const auto succeed = _callback->OnUmpPacket(this, const_cast<void*>(p));
+					if (!succeed)
 					{
 						return absl::AbortedError(strf("IUmpObserver::OnUmpPacket return false (out stream : %s), pipeline will be stopped.", _stream_name.c_str()));
 					}
 				}
+				else
+				{
+					log_w(strf("IUmpObserver::OnUmpPacket packet timeout. (out stream : %s, current: %d, last: %d, timeout: %d)", _stream_name.c_str(), current, _lastTimestampMicrosec, _timeout));
+				}
+				_lastTimestampMicrosec = current;
 			}
-
+			else
+			{
+				_lastTimestampMicrosec = -1;
+			}
 			return absl::OkStatus();
 		}, true));
 
@@ -76,4 +92,6 @@ protected:
 	IUmpPacketCallback* _callback = nullptr;
 	bool _presence = false;
 	std::shared_ptr<IPacketAPI> _packet_api;
+	long _timeout = -1;
+	long _lastTimestampMicrosec = -1;
 };

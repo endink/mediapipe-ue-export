@@ -15,6 +15,7 @@
 
 #include <chrono>
 #include <thread>
+#include <windows.h>
 
 inline double get_timestamp_us() // microseconds
 {
@@ -30,21 +31,21 @@ UmpPipeline::UmpPipeline()
 absl::Status UmpPipeline::AddImageFrameIntoStream(const char* stream_name, IMediaPipeTexture* texture) const
 {
 	TRY
-
-	 auto image_frame_out = absl::make_unique<mediapipe::ImageFrame>(
-		static_cast<mediapipe::ImageFormat::Format>(static_cast<int>(texture->GetFormat())),
-		texture->GetWidth(),
-		texture->GetHeight(),
-		texture->GetWidthStep(),
-		static_cast<uint8*>(texture->GetData()),
-		[texture](uint8*)
-		{
-			texture->Release();
-		}
-	);
 	
-	mediapipe::Timestamp ts(static_cast<int64>(get_timestamp_us()));
-	auto status = _graph->AddPacketToInputStream(stream_name, mediapipe::Adopt(image_frame_out.release()).At(ts));
+	 auto image_frame_out =absl::make_unique<mediapipe::ImageFrame>(
+	 	static_cast<mediapipe::ImageFormat::Format>(static_cast<int>(texture->GetFormat())),
+	 	texture->GetWidth(),
+	 	texture->GetHeight(),
+	 	texture->GetWidthStep(),
+	 	static_cast<uint8*>(texture->GetData()),
+	 	[texture](uint8*)
+	 	{
+	 		texture->Release();
+	 	}
+	 );
+	const auto packet_in = Adopt(image_frame_out.release()).At(mediapipe::Timestamp(static_cast<size_t>(get_timestamp_us())));
+	auto status = _graph->AddPacketToInputStream(stream_name, packet_in);
+	//delete image_frame_out; //just delete semantics, its moved
 	return status;
 	CATCH_RETURN_STATUS
 }
@@ -85,7 +86,7 @@ void UmpPipeline::ShowVideoWindow(bool show)
 }
 
 
-IUmpObserver* UmpPipeline::CreateObserver(const char* stream_name)
+IUmpObserver* UmpPipeline::CreateObserver(const char* stream_name, long timeoutMillisecond)
 {
 	log_i(strf("CreateObserver: %s", stream_name));
 	if (_run_flag)
@@ -93,7 +94,7 @@ IUmpObserver* UmpPipeline::CreateObserver(const char* stream_name)
 		log_e("Invalid state: pipeline running");
 		return nullptr;
 	}
-	auto* observer = new UmpObserver(stream_name, _packet_api);
+	auto* observer = new UmpObserver(stream_name, _packet_api, timeoutMillisecond);
 	observer->AddRef();
 	_observers.emplace_back(observer);
 	return observer;
@@ -290,8 +291,6 @@ absl::Status UmpPipeline::RunImageImpl(SidePacket& side_packet, IImageSource* im
 	}
 	RET_CHECK_OK(_graph->StartRun(side_packet));
 
-	double t0 = get_timestamp_us();
-
 	log_i("------------> Start Loop Work Thread <------------");
 	bool first_loop = true;
 	bool is_static = image_source->IsStatic();
@@ -316,7 +315,7 @@ absl::Status UmpPipeline::RunImageImpl(SidePacket& side_packet, IImageSource* im
 		}
 		if(!status.ok())
 		{
-			image->Release();
+			//image->Release();
 			std::this_thread::sleep_for(std::chrono::milliseconds(mills));
 			continue;
 		}
@@ -552,8 +551,7 @@ absl::Status UmpPipeline::RunCaptureImpl(SidePacket& side_packet)
 				const double delta = fabs(cur_timestamp_us - frame_timestamp_us);
 				if (delta >= frame_us)
 					break;
-				else
-					std::this_thread::sleep_for(std::chrono::microseconds((size_t)(frame_us - delta)));
+				std::this_thread::sleep_for(std::chrono::microseconds((size_t)(frame_us - delta)));
 			}
 		}
 
