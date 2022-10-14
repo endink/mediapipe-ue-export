@@ -51,7 +51,7 @@ class IImageSource
 {
 public:
 	virtual ~IImageSource() = default;
-	virtual  IMediaPipeTexture* GetTexture() = 0;
+	virtual  bool GetTexture(IMediaPipeTexture*& outTexture) = 0;
 	virtual bool IsStatic() const = 0;
 };
 

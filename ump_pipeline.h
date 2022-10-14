@@ -37,6 +37,7 @@ public:
 
 private:
 	void WorkerThread(SidePacket side_packet, IImageSource* image_source);
+	void OptimizeGraphConfig(SidePacket& side_packet, mediapipe::CalculatorGraphConfig& config);
 	absl::Status ShutdownImpl();
 	absl::Status RunImageImpl(SidePacket& side_packet, IImageSource* image_source);
 	absl::Status RunCaptureImpl(SidePacket& side_packet);

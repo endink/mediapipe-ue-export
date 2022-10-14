@@ -224,6 +224,23 @@ void UmpPipeline::WorkerThread(SidePacket side_packet, IImageSource* image_sourc
 	}
 }
 
+void UmpPipeline::OptimizeGraphConfig(SidePacket& side_packet, mediapipe::CalculatorGraphConfig& config)
+{
+	//fix: https://github.com/google/mediapipe/issues/3003
+	google::protobuf::RepeatedPtrField<mediapipe::CalculatorGraphConfig_Node> nodes = config.node();
+	for (int i = 0; i < config.node_size(); i ++)
+	{
+		mediapipe::CalculatorGraphConfig_Node& node = nodes[i];
+		auto findIndex = static_cast<int>(node.calculator().find("FaceGeometry"));
+		if(findIndex >= 0 && side_packet.find("refine_face_landmarks") != side_packet.end())
+		{
+			side_packet["refine_face_landmarks"] = mediapipe::MakePacket<bool>(false);
+			log_w("FaceGeometry is enabled, auto disable refine_face_landmarks options.");
+			break;
+		}
+	}
+}
+
 absl::Status UmpPipeline::ShutdownImpl()
 {
 	_frame_id = 0;
@@ -257,8 +274,10 @@ absl::Status UmpPipeline::RunImageImpl(SidePacket& side_packet, IImageSource* im
 	RET_CHECK_OK(LoadGraphConfig(_config_filename, config_str));
 
 	log_i("Parse Graph Proto");
-	mediapipe::CalculatorGraphConfig config;
+	mediapipe::CalculatorGraphConfig config{};
 	RET_CHECK(mediapipe::ParseTextProto<mediapipe::CalculatorGraphConfig>(config_str, &config));
+
+	OptimizeGraphConfig(side_packet, config);
 
 	log_i("CalculatorGraph::Initialize");
 	_graph.reset(new mediapipe::CalculatorGraph());
@@ -297,8 +316,8 @@ absl::Status UmpPipeline::RunImageImpl(SidePacket& side_packet, IImageSource* im
 	auto mills = !is_static ? 33 : 1000;
 	while (_run_flag)
 	{
-		auto* image = image_source->GetTexture();
-		if(image == nullptr)
+		IMediaPipeTexture* image = nullptr;
+		if(!image_source->GetTexture(image))
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(mills));
 			continue;
@@ -309,12 +328,9 @@ absl::Status UmpPipeline::RunImageImpl(SidePacket& side_packet, IImageSource* im
 			_image_size_known = true;
 		}
 		auto status = AddImageFrameIntoStream(kInputStream, image);
-		if(first_loop && !status.ok())
-		{
-			log_e(strf("AddImageFrameIntoStream failed: %.*s", static_cast<int>(status.message().size()), status.message().data()));
-		}
 		if(!status.ok())
 		{
+			log_e(strf("AddImageFrameIntoStream failed: %.*s", static_cast<int>(status.message().size()), status.message().data()));
 			//image->Release();
 			std::this_thread::sleep_for(std::chrono::milliseconds(mills));
 			continue;
@@ -353,6 +369,7 @@ absl::Status UmpPipeline::RunCaptureImpl(SidePacket& side_packet)
 	log_i("Parse Graph Proto");
 	mediapipe::CalculatorGraphConfig config;
 	RET_CHECK(mediapipe::ParseTextProto<mediapipe::CalculatorGraphConfig>(config_str, &config));
+	OptimizeGraphConfig(side_packet, config);
 
 	log_i("CalculatorGraph::Initialize");
 	_graph.reset(new mediapipe::CalculatorGraph());
